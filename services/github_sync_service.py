@@ -128,7 +128,9 @@ class GitHubSyncService:
             return {"ok": True, "data": {"available": False, "version": tag, "message": "Release 未包含 EXE 文件"}}
         checksum_asset = next((x for x in assets if str(x.get("name", "")).lower() in ("sha256.txt", "checksums.txt", "checksums.sha256")), None)
         available = _version_tuple(tag) > _version_tuple(self.app_version)
-        return {"ok": True, "data": {"available": available, "version": tag, "name": asset.get("name"), "download_url": asset.get("browser_download_url"), "checksum_url": checksum_asset.get("browser_download_url") if checksum_asset else "", "release_url": payload.get("html_url")}}
+        owner = self._settings()["owner"]
+        repo = self._settings()["repo"]
+        return {"ok": True, "data": {"available": available, "version": tag, "name": asset.get("name"), "download_url": self._api_url(f"repos/{owner}/{repo}/releases/assets/{asset.get('id')}"), "checksum_url": self._api_url(f"repos/{owner}/{repo}/releases/assets/{checksum_asset.get('id')}") if checksum_asset else "", "release_url": payload.get("html_url")}}
 
     def schedule_update(self):
         result = self.check_version()
@@ -320,10 +322,20 @@ def _sha256_file(path):
     return digest.hexdigest()
 
 
+def _auth_headers():
+    headers = {"User-Agent": "material-cabinet"}
+    token = GitHubSyncService._token()
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    return headers
+
+
 def _download_checksum(url, asset_name):
     if not url:
         return ""
-    request = urllib.request.Request(url, headers={"User-Agent": "material-cabinet"})
+    headers = _auth_headers()
+    headers["Accept"] = "application/octet-stream"
+    request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
             text = response.read().decode("utf-8", errors="replace")
@@ -341,7 +353,9 @@ def _download_checksum(url, asset_name):
 
 
 def _download(url, path):
-    request = urllib.request.Request(url, headers={"User-Agent": "material-cabinet"})
+    headers = _auth_headers()
+    headers["Accept"] = "application/octet-stream"
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=30) as response, open(path, "wb") as target:
         shutil.copyfileobj(response, target)
 
