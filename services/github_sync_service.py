@@ -244,7 +244,7 @@ class GitHubSyncService:
                 changed += 1
         return {"ok": True, "data": {"changed": changed}}
 
-    def download_inventory(self):
+    def _download_inventory(self):
         cfg = self._settings()
         status, payload = self._request(self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{SNAPSHOT_NAME}"), auth=True)
         if status == 404:
@@ -261,28 +261,39 @@ class GitHubSyncService:
             result.setdefault("data", {})["found"] = True
         return result
 
-    def upload_inventory(self):
+    def download_inventory(self):
+        with self._sync_lock:
+            return self._download_inventory()
+
+    def _upload_inventory(self):
         cfg = self._settings()
         if not self._token():
             return {"ok": False, "error": "未配置 GitHub Token，库存不会上传"}
         url = self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{SNAPSHOT_NAME}")
-        status, current = self._request(url, auth=True)
         snapshot = self._snapshot()
         content = base64.b64encode(json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8")).decode("ascii")
-        payload = {"message": "同步脱敏库存快照", "content": content}
-        if status == 200 and current.get("sha"):
-            payload["sha"] = current["sha"]
-        result_status, result = self._request(url, method="PUT", data=payload, auth=True)
-        if result_status not in (200, 201):
-            return {"ok": False, "error": f"上传库存失败：{result.get('message', result_status)}"}
-        return {"ok": True, "data": {"uploaded": True, "updated_at": snapshot["updated_at"]}}
+        for _ in range(2):
+            status, current = self._request(url, auth=True)
+            payload = {"message": "同步脱敏库存快照", "content": content}
+            if status == 200 and current.get("sha"):
+                payload["sha"] = current["sha"]
+            result_status, result = self._request(url, method="PUT", data=payload, auth=True)
+            if result_status in (200, 201):
+                return {"ok": True, "data": {"uploaded": True, "updated_at": snapshot["updated_at"]}}
+            if result_status != 409:
+                return {"ok": False, "error": f"上传库存失败：{result.get('message', result_status)}"}
+        return {"ok": False, "error": "上传库存失败：云端文件发生并发冲突，请稍后重试"}
+
+    def upload_inventory(self):
+        with self._sync_lock:
+            return self._upload_inventory()
 
     def sync_inventory(self):
         with self._sync_lock:
-            downloaded = self.download_inventory()
+            downloaded = self._download_inventory()
             if not downloaded.get("ok"):
                 return downloaded
-            uploaded = self.upload_inventory()
+            uploaded = self._upload_inventory()
         if not uploaded.get("ok"):
             return {"ok": True, "data": {"download": downloaded.get("data", {}), "upload": uploaded, "message": uploaded.get("error")}}
         return {"ok": True, "data": {"download": downloaded.get("data", {}), "upload": uploaded.get("data", {}), "message": "库存同步完成"}}

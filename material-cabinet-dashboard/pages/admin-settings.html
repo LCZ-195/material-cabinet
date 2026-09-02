@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置</title>
+    <style id="theme-vars">
+/* Material Cabinet Dashboard — colors_and_type.css */
+/* Single primary hue: cyan-teal. No secondary/accent brand hue. */
+
+:root {
+  /* Primary scale (cyan-teal) */
+  --mc-primary-50: #ecfeff;
+  --mc-primary-100: #cffafe;
+  --mc-primary-200: #a5f3fc;
+  --mc-primary-300: #67e8f9;
+  --mc-primary-400: #22d3ee;
+  --mc-primary-500: #06b6d4;
+  --mc-primary-600: #0891b2;
+  --mc-primary-700: #0e7490;
+  --mc-primary-800: #155e75;
+  --mc-primary-900: #164e63;
+  --mc-primary-950: #083344;
+
+  /* Neutral scale (slate) */
+  --mc-neutral-0: #ffffff;
+  --mc-neutral-50: #f8fafc;
+  --mc-neutral-100: #f1f5f9;
+  --mc-neutral-200: #e2e8f0;
+  --mc-neutral-300: #cbd5e1;
+  --mc-neutral-400: #94a3b8;
+  --mc-neutral-500: #64748b;
+  --mc-neutral-600: #475569;
+  --mc-neutral-700: #334155;
+  --mc-neutral-800: #1e293b;
+  --mc-neutral-900: #0f172a;
+  --mc-neutral-950: #020617;
+
+  /* Semantic status colors */
+  --mc-state-success: #22c55e;
+  --mc-state-success-bg: rgba(34, 197, 94, 0.12);
+  --mc-state-warning: #f59e0b;
+  --mc-state-warning-bg: rgba(245, 158, 11, 0.12);
+  --mc-state-error: #ef4444;
+  --mc-state-error-bg: rgba(239, 68, 68, 0.12);
+  --mc-state-info: #3b82f6;
+  --mc-state-info-bg: rgba(59, 130, 246, 0.12);
+
+  /* Semantic aliases */
+  --mc-background: #fafafa;
+  --mc-foreground: #171717;
+  --mc-card: #ffffff;
+  --mc-card-foreground: #171717;
+  --mc-popover: #ffffff;
+  --mc-popover-foreground: #171717;
+  --mc-primary: #171717;
+  --mc-primary-foreground: #ffffff;
+  --mc-muted: #f5f5f5;
+  --mc-muted-foreground: #737373;
+  --mc-border: #e8e8e8;
+  --mc-input: #d4d4d4;
+  --mc-ring: #0070f3;
+
+  /* Detail blue accent & interactive focus */
+  --mc-blue: #2563eb;
+  --mc-blue-focus-ring: #dbeafe;
+  --mc-blue-outline: #93c5fd;
+  --mc-blue-subtle-bg: #eff6ff;
+  --mc-primary-hover: #333333;
+
+  /* Warning / danger / subtle surfaces */
+  --mc-warning-fg: #92400e;
+  --mc-warning-bg: #fffbeb;
+  --mc-danger-fg: #b91c1c;
+  --mc-danger-border: #fecaca;
+  --mc-danger-bg: #fef2f2;
+  --mc-subtle-border: #f0f0f0;
+  --mc-dim-foreground: #a3a3a3;
+  --mc-neutral-fg: #525252;
+
+  --mc-radius-small: 4px;
+  --mc-radius-medium: 8px;
+  --mc-radius-large: 12px;
+
+  /* Surface & depth */
+  --mc-surface-elevated: #ffffff;
+  --mc-surface-hover: #f7f7f7;
+
+  /* Typography */
+  --mc-font-sans: "Inter", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mc-font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Consolas", monospace;
+
+  /* Shadows (static <= 0.05 alpha, floating <= 0.18) */
+  --mc-shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.05);
+  --mc-shadow-md: 0 4px 12px rgba(2, 6, 23, 0.05);
+  --mc-shadow-lg: 0 10px 30px rgba(2, 6, 23, 0.05);
+  --mc-shadow-floating: 0 18px 50px rgba(2, 6, 23, 0.22);
+
+  /* Spacing scale */
+  --mc-space-1: 4px;
+  --mc-space-2: 8px;
+  --mc-space-3: 12px;
+  --mc-space-4: 16px;
+  --mc-space-5: 20px;
+  --mc-space-6: 24px;
+  --mc-space-8: 32px;
+  --mc-space-10: 40px;
+}
+
+/* Light mode toggle support */
+html.light {
+  --mc-background: #f8fafc;
+  --mc-foreground: #0f172a;
+  --mc-card: #ffffff;
+  --mc-card-foreground: #0f172a;
+  --mc-popover: #ffffff;
+  --mc-popover-foreground: #0f172a;
+  --mc-muted: #f1f5f9;
+  --mc-muted-foreground: #64748b;
+  --mc-border: rgba(100, 116, 139, 0.18);
+  --mc-input: rgba(100, 116, 139, 0.18);
+  --mc-surface-elevated: rgba(255, 255, 255, 0.78);
+  --mc-surface-hover: rgba(241, 245, 249, 0.7);
+  --mc-shadow-sm: none;
+  --mc-shadow-md: none;
+  --mc-shadow-lg: none;
+  --mc-shadow-floating: 0 18px 50px rgba(0, 0, 0, 0.12);
+}
+
+body {
+  font-family: var(--mc-font-sans);
+  background-color: var(--mc-background);
+  color: var(--mc-foreground);
+}
+
+.font-mono { font-family: var(--mc-font-mono); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--mc-background);
+    --color-foreground: var(--mc-foreground);
+    --color-card: var(--mc-card);
+    --color-card-foreground: var(--mc-card-foreground);
+    --color-popover: var(--mc-popover);
+    --color-popover-foreground: var(--mc-popover-foreground);
+    --color-primary: var(--mc-primary);
+    --color-primary-foreground: var(--mc-primary-foreground);
+    --color-muted: var(--mc-muted);
+    --color-muted-foreground: var(--mc-muted-foreground);
+    --color-border: var(--mc-border);
+    --color-input: var(--mc-input);
+    --color-ring: var(--mc-ring);
+    --radius-sm: var(--mc-radius-small);
+    --radius-md: var(--mc-radius-medium);
+    --radius-lg: var(--mc-radius-large);
+  }
+  @layer base {
+    body { background: var(--mc-background); color: var(--mc-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--mc-background); }
+      .text-background { color: var(--mc-background); }
+      .border-background { border-color: var(--mc-background); }
+      .ring-background { --tw-ring-color: var(--mc-background); }
+      .bg-foreground { background-color: var(--mc-foreground); }
+      .text-foreground { color: var(--mc-foreground); }
+      .border-foreground { border-color: var(--mc-foreground); }
+      .ring-foreground { --tw-ring-color: var(--mc-foreground); }
+      .bg-card { background-color: var(--mc-card); }
+      .text-card { color: var(--mc-card); }
+      .border-card { border-color: var(--mc-card); }
+      .ring-card { --tw-ring-color: var(--mc-card); }
+      .bg-card-foreground { background-color: var(--mc-card-foreground); }
+      .text-card-foreground { color: var(--mc-card-foreground); }
+      .border-card-foreground { border-color: var(--mc-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--mc-card-foreground); }
+      .bg-popover { background-color: var(--mc-popover); }
+      .text-popover { color: var(--mc-popover); }
+      .border-popover { border-color: var(--mc-popover); }
+      .ring-popover { --tw-ring-color: var(--mc-popover); }
+      .bg-popover-foreground { background-color: var(--mc-popover-foreground); }
+      .text-popover-foreground { color: var(--mc-popover-foreground); }
+      .border-popover-foreground { border-color: var(--mc-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--mc-popover-foreground); }
+      .bg-primary { background-color: var(--mc-primary); }
+      .text-primary { color: var(--mc-primary); }
+      .border-primary { border-color: var(--mc-primary); }
+      .ring-primary { --tw-ring-color: var(--mc-primary); }
+      .bg-primary-foreground { background-color: var(--mc-primary-foreground); }
+      .text-primary-foreground { color: var(--mc-primary-foreground); }
+      .border-primary-foreground { border-color: var(--mc-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--mc-primary-foreground); }
+      .bg-muted { background-color: var(--mc-muted); }
+      .text-muted { color: var(--mc-muted); }
+      .border-muted { border-color: var(--mc-muted); }
+      .ring-muted { --tw-ring-color: var(--mc-muted); }
+      .bg-muted-foreground { background-color: var(--mc-muted-foreground); }
+      .text-muted-foreground { color: var(--mc-muted-foreground); }
+      .border-muted-foreground { border-color: var(--mc-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--mc-muted-foreground); }
+      .bg-border { background-color: var(--mc-border); }
+      .text-border { color: var(--mc-border); }
+      .border-border { border-color: var(--mc-border); }
+      .ring-border { --tw-ring-color: var(--mc-border); }
+      .bg-input { background-color: var(--mc-input); }
+      .text-input { color: var(--mc-input); }
+      .border-input { border-color: var(--mc-input); }
+      .ring-input { --tw-ring-color: var(--mc-input); }
+      .bg-ring { background-color: var(--mc-ring); }
+      .text-ring { color: var(--mc-ring); }
+      .border-ring { border-color: var(--mc-ring); }
+      .ring-ring { --tw-ring-color: var(--mc-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+  <style id="critical-layout">
+    .app-shell { display: flex; min-height: 100vh; }
+    .app-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-main {
+      margin-left: 240px;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .app-header {
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .app-content {
+      flex: 1 1 auto;
+      padding: var(--mc-space-6);
+    }
+    .app-footer {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--mc-space-6);
+      font-size: 12px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--mc-space-3);
+      padding: var(--mc-space-3) var(--mc-space-4);
+      margin: 0 var(--mc-space-3);
+      border-radius: var(--mc-radius-medium);
+      color: var(--mc-muted-foreground);
+      text-decoration: none;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .nav-item:hover {
+      background-color: var(--mc-surface-hover);
+      color: var(--mc-foreground);
+    }
+    .nav-item.active {
+      background-color: var(--mc-state-info-bg);
+      color: var(--mc-ring);
+      font-weight: 500;
+    }
+    .nav-item.active [data-lucide] {
+      color: var(--mc-ring);
+    }
+    .search-input {
+      width: 320px;
+      padding-left: 36px;
+      padding-right: var(--mc-space-4);
+      height: 36px;
+      border-radius: var(--mc-radius-medium);
+      border: 1px solid var(--mc-border);
+      background-color: var(--mc-muted);
+      color: var(--mc-foreground);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .search-input:focus {
+      border-color: var(--mc-ring);
+      box-shadow: 0 0 0 2px var(--mc-state-info-bg);
+    }
+    .search-input::placeholder {
+      color: var(--mc-muted-foreground);
+    }
+    .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
+
+    /* 设置页专用组件样式 */
+    .panel { background: var(--mc-card); border: 1px solid var(--mc-border); border-radius: var(--mc-radius-medium); }
+    .field { height: 42px; width: 100%; border: 1px solid var(--mc-input); border-radius: var(--mc-radius-medium); background: var(--mc-card); padding: 0 12px; color: var(--mc-foreground); outline: none; }
+    .field:focus { border-color: var(--mc-blue); box-shadow: 0 0 0 3px var(--mc-blue-focus-ring); }
+    .btn { min-height: 38px; padding: 0 14px; border-radius: var(--mc-radius-medium); border: 1px solid var(--mc-border); background: var(--mc-card); color: var(--mc-foreground); font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { background: var(--mc-muted); }
+    .btn-primary { background: var(--mc-primary); color: var(--mc-primary-foreground); border-color: var(--mc-primary); }
+    .btn-primary:hover { background: var(--mc-primary-hover); }
+    .btn-danger { color: var(--mc-danger-fg); border-color: var(--mc-danger-border); }
+    .btn-danger:hover { background: var(--mc-danger-bg); }
+    .setting-row { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(260px, 1.2fr); gap: 24px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--mc-subtle-border); }
+    .setting-row:last-child { border-bottom: 0; }
+    .toggle { width: 40px; height: 24px; appearance: none; border-radius: 999px; background: var(--mc-input); position: relative; cursor: pointer; transition: background .15s ease; }
+    .toggle:before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; border-radius: 50%; background: var(--mc-card); transition: transform .15s ease; }
+    .toggle:checked { background: var(--mc-blue); }
+    .toggle:checked:before { transform: translateX(16px); }
+    .capability { min-height: 80px; display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--mc-border); border-radius: var(--mc-radius-medium); text-decoration: none; color: var(--mc-foreground); }
+    .capability:hover { border-color: var(--mc-blue-outline); background: var(--mc-blue-subtle-bg); }
+    @media (max-width: 720px) {
+      .app-sidebar { width: 64px; }
+      .app-sidebar span { display: none; }
+      .app-sidebar .brand { justify-content: center; padding: 0; }
+      .nav-item { margin-left: 10px; margin-right: 10px; justify-content: center; padding-left: 0; padding-right: 0; }
+      .app-main { margin-left: 64px; }
+      .app-content { padding: 16px; }
+      .app-header { padding: 0 16px; }
+      .search-input { width: min(42vw, 240px); }
+      .setting-row { grid-template-columns: 1fr; gap: 10px; }
+    }
+    @media (max-width: 520px) {
+      .app-header > div:last-child { display: none; }
+      .search-input { width: calc(100vw - 104px); }
+      .app-content { padding-left: 12px; padding-right: 12px; }
+    }
+  </style>
+
+  <div class="app-shell">
+    <!-- 左侧固定侧边栏 -->
+    <aside class="app-sidebar bg-card border-r border-border" role="navigation" aria-label="主导航">
+      <!-- 品牌标识 -->
+      <div class="brand h-16 flex items-center gap-3 px-5 border-b border-border">
+        <div class="w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
+          <i data-lucide="box" class="w-5 h-5"></i>
+        </div>
+        <span class="text-lg font-semibold text-foreground tracking-tight">物料收纳柜</span>
+      </div>
+
+      <!-- 主导航 -->
+      <nav class="flex-1 py-4 overflow-y-auto no-scrollbar" aria-label="应用导航">
+        <a href="index.html" class="nav-item">
+          <i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i>
+          <span>概览</span>
+        </a>
+        <a href="cabinet.html" class="nav-item">
+          <i data-lucide="grid-3x3" class="w-[18px] h-[18px]"></i>
+          <span>收纳柜</span>
+        </a>
+        <a href="materials.html" data-dom-id="admin-nav-materials" class="nav-item">
+          <i data-lucide="database" class="w-[18px] h-[18px]"></i>
+          <span>物料</span>
+        </a>
+        <a href="bom.html" data-dom-id="admin-nav-bom" class="nav-item">
+          <i data-lucide="file-spreadsheet" class="w-[18px] h-[18px]"></i>
+          <span>BOM</span>
+        </a>
+        <a href="analytics.html" data-dom-id="admin-nav-analytics" class="nav-item">
+          <i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i>
+          <span>统计</span>
+        </a>
+        <a href="admin-settings.html" data-dom-id="admin-nav-settings" class="nav-item active" aria-current="page">
+          <i data-lucide="settings-2" class="w-[18px] h-[18px]"></i>
+          <span>设置</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 右侧主区域 -->
+    <div class="app-main">
+      <!-- 顶部固定头部 -->
+      <header class="app-header bg-card border-b border-border flex items-center justify-between px-6" role="banner">
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+            <input type="text" class="search-input" placeholder="搜索物料、BOM、收纳柜…" aria-label="全局搜索" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card text-foreground text-sm font-medium hover:bg-muted transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            返回概览
+          </a>
+        </div>
+      </header>
+
+      <!-- 页面内容区 -->
+      <main class="app-content bg-background">
+        <div class="page-title-region mb-5">
+          <h1 class="text-2xl font-semibold text-foreground">系统设置</h1>
+          <p class="text-sm text-muted-foreground mt-2">配置数据源、库存规则与本地演示数据。</p>
+        </div>
+
+        <div class="flex gap-1 border-b border-border mb-6" role="tablist"><button data-dom-id="admin-tab-connection" class="tab px-4 py-3 text-sm font-semibold text-foreground border-b-2 border-foreground" data-tab="connection" role="tab">连接与规则</button><button data-dom-id="admin-tab-data" class="tab px-4 py-3 text-sm text-muted-foreground" data-tab="data" role="tab">数据与安全</button><button data-dom-id="admin-tab-capabilities" class="tab px-4 py-3 text-sm text-muted-foreground" data-tab="capabilities" role="tab">能力入口</button><div class="flex-1"></div><a href="component-library.html" data-dom-id="admin-nav-component-library" class="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-[var(--mc-blue)] border-b-2 border-transparent hover:text-[var(--mc-blue)]/80 transition-colors" aria-label="历史库存记忆库"><i data-lucide="history" class="w-4 h-4"></i>历史库存记忆库</a></div>
+        <section id="connection" class="tab-panel space-y-5">
+          <div class="panel p-6"><div class="mb-2"><h2 class="text-base font-semibold">DeepSeek AI 智能匹配</h2><p class="text-sm text-muted-foreground mt-1">配置后可使用 AI 进行物料智能匹配；未配置时自动使用本地参数/供应商编号匹配。</p></div><div class="setting-row"><div><label for="ds-key" class="text-sm font-medium">DeepSeek API Key</label><p class="text-xs text-muted-foreground mt-1">在 platform.deepseek.com 获取</p></div><input id="ds-key" data-config-key="deepseek_api_key" class="field font-mono" value="" type="password" autocomplete="off"></div><div class="setting-row"><div><label for="ds-base" class="text-sm font-medium">API Base URL</label><p class="text-xs text-muted-foreground mt-1">DeepSeek 接口地址</p></div><input id="ds-base" data-config-key="deepseek_api_base" class="field font-mono" value="https://api.deepseek.com/v1" type="url"></div><div class="setting-row"><div><label for="ds-model" class="text-sm font-medium">模型名称</label><p class="text-xs text-muted-foreground mt-1">如 deepseek-v4-flash</p></div><input id="ds-model" data-config-key="deepseek_model" class="field font-mono" value="deepseek-v4-flash"></div></div>
+          <div class="panel p-6"><div class="mb-2"><h2 class="text-base font-semibold">GitHub 同步</h2><p class="text-sm text-muted-foreground mt-1">用于检查 Release 更新和同步脱敏库存快照。API 密钥不会进入库存快照。</p></div><div class="setting-row"><div><label for="github-owner" class="text-sm font-medium">用户名</label><p class="text-xs text-muted-foreground mt-1">GitHub 账户名</p></div><input id="github-owner" class="field font-mono" value="LCZ-195" type="text" autocomplete="off"></div><div class="setting-row"><div><label for="github-repo" class="text-sm font-medium">仓库名</label><p class="text-xs text-muted-foreground mt-1">私有仓库名称</p></div><input id="github-repo" class="field font-mono" value="material-cabinet" type="text" autocomplete="off"></div><div class="setting-row"><div><label for="github-token" class="text-sm font-medium">GitHub Token</label><p class="text-xs text-muted-foreground mt-1">仅保存在本机，用于库存上传</p></div><input id="github-token" class="field font-mono" value="" type="password" autocomplete="new-password" placeholder="留空表示不修改"></div><div class="setting-row"><div><span class="text-sm font-medium">启动时检查版本</span><p class="text-xs text-muted-foreground mt-1">发现新版本后提示</p></div><input id="github-auto-update" class="toggle" type="checkbox" checked aria-label="启动时检查版本"></div><div class="setting-row"><div><span class="text-sm font-medium">启动时同步库存</span><p class="text-xs text-muted-foreground mt-1">下载并合并后上传脱敏快照</p></div><input id="github-auto-inventory" class="toggle" type="checkbox" checked aria-label="启动时同步库存"></div><div class="flex justify-end mt-4"><button id="github-save" data-dom-id="github-save" class="btn btn-primary" type="button"><i data-lucide="cloud-cog" class="w-4 h-4"></i>保存 GitHub 配置</button></div></div>
+          <div class="panel p-6"><div class="mb-2"><h2 class="text-base font-semibold">库存默认值</h2><p class="text-sm text-muted-foreground mt-1">用于新建物料和补货建议的初始规则。</p></div><div class="setting-row"><div><label for="min-stock" class="text-sm font-medium">默认最低库存</label><p class="text-xs text-muted-foreground mt-1">低于此数量时标记为低库存</p></div><input id="min-stock" name="default_min_stock" data-config-key="default_min_stock" class="field font-mono max-w-[220px]" value="10" type="number" min="0"></div><div class="setting-row"><div><span class="text-sm font-medium">允许单格多物料</span><p class="text-xs text-muted-foreground mt-1">同一格位可关联不同物料</p></div><input id="combine-same-spec" name="combine_same_spec_in_slot" data-config-key="combine_same_spec_in_slot" class="toggle" type="checkbox" checked aria-label="允许单格多物料"></div><div class="setting-row"><div><span class="text-sm font-medium">自动为补货 BOM 推荐位置</span><p class="text-xs text-muted-foreground mt-1">导入 BOM 时按空闲格位给出建议</p></div><input id="auto-pick-location" name="auto_pick_location" data-config-key="auto_pick_location" class="toggle" type="checkbox" checked aria-label="自动为补货 BOM 推荐位置"></div></div>
+          <div class="flex flex-wrap items-center justify-between gap-3"><div id="save-status" class="text-sm text-[var(--mc-blue)]" role="status" aria-live="polite"></div><div class="flex gap-2"><button id="test-connection" data-dom-id="admin-test-connection" class="btn" type="button"><i data-lucide="plug-zap" class="w-4 h-4"></i>测试连接</button><button id="save-settings" data-dom-id="admin-save-settings" class="btn btn-primary" type="button"><i data-lucide="save" class="w-4 h-4"></i>保存设置</button></div></div>
+        </section>
+        <section id="data" class="tab-panel hidden space-y-5"><div class="panel p-6"><h2 class="text-base font-semibold">数据与安全</h2><p class="text-sm text-muted-foreground mt-1 mb-5">危险操作只作用于本地演示数据。</p><div class="flex flex-wrap items-center justify-between gap-4 py-4 border-b border-[var(--mc-subtle-border)]"><div><div class="text-sm font-medium">清除演示数据</div><div class="text-xs text-muted-foreground mt-1">移除示例物料、操作日志与测试记录。</div></div><button data-dom-id="admin-clear-demo" class="btn btn-danger data-action" type="button">清除演示数据</button></div><div class="flex flex-wrap items-center justify-between gap-4 py-4"><div><div class="text-sm font-medium">完全清空业务数据</div><div class="text-xs text-muted-foreground mt-1">清空全部物料、格位、BOM 与日志，无法撤销。</div></div><button data-dom-id="admin-clear-all" class="btn btn-danger data-action" type="button">完全清空</button></div><div class="mt-5 flex items-start gap-2 rounded-md bg-[var(--mc-warning-bg)] p-3 text-xs leading-5 text-[var(--mc-warning-fg)]"><i data-lucide="triangle-alert" class="w-4 h-4 shrink-0"></i><span>执行清空操作前请先备份业务数据。当前页面只做演示，不会实际删除文件或远端数据。</span></div></div></section>
+        <section id="capabilities" class="tab-panel hidden"><div class="panel p-6"><h2 class="text-base font-semibold">已有能力入口</h2><p class="text-sm text-muted-foreground mt-1 mb-5">从设置页快速访问现有业务页面。</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><a data-dom-id="admin-capability-export" class="capability" href="analytics.html"><i data-lucide="download" class="w-5 h-5 text-[var(--mc-blue)]"></i><span><strong class="block text-sm">库存导出</strong><small class="text-xs text-muted-foreground">导出库存与统计报表</small></span><i data-lucide="arrow-up-right" class="w-4 h-4 ml-auto text-[var(--mc-dim-foreground)]"></i></a><a data-dom-id="admin-capability-logs" class="capability" href="index.html"><i data-lucide="scroll-text" class="w-5 h-5 text-[var(--mc-blue)]"></i><span><strong class="block text-sm">操作日志</strong><small class="text-xs text-muted-foreground">查看最近操作记录</small></span><i data-lucide="arrow-up-right" class="w-4 h-4 ml-auto text-[var(--mc-dim-foreground)]"></i></a><a data-dom-id="admin-capability-materials" class="capability" href="materials.html"><i data-lucide="database" class="w-5 h-5 text-[var(--mc-blue)]"></i><span><strong class="block text-sm">物料管理</strong><small class="text-xs text-muted-foreground">维护物料主数据</small></span><i data-lucide="arrow-up-right" class="w-4 h-4 ml-auto text-[var(--mc-dim-foreground)]"></i></a><a data-dom-id="admin-capability-bom" class="capability" href="bom.html"><i data-lucide="file-spreadsheet" class="w-5 h-5 text-[var(--mc-blue)]"></i><span><strong class="block text-sm">BOM 导入</strong><small class="text-xs text-muted-foreground">导入并检查 BOM</small></span><i data-lucide="arrow-up-right" class="w-4 h-4 ml-auto text-[var(--mc-dim-foreground)]"></i></a></div></div></section>
+      </main>
+
+      <!-- 底栏 -->
+      <footer class="app-footer bg-background border-t border-border text-muted-foreground" role="contentinfo">
+        <span class="flex items-center gap-2">
+          <i data-lucide="package" class="w-3.5 h-3.5"></i>
+          物料收纳柜 v1.15.7
+        </span>
+        <span>本地演示 · 配置不会发送到服务器</span>
+      </footer>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll('.tab'); var panels = document.querySelectorAll('.tab-panel');
+      tabs.forEach(function (tab) { tab.addEventListener('click', function () { var target = tab.dataset.tab; tabs.forEach(function (item) { item.classList.remove('font-semibold','text-foreground','border-b-2','border-foreground'); item.classList.add('text-muted-foreground'); }); tab.classList.add('font-semibold','text-foreground','border-b-2','border-foreground'); tab.classList.remove('text-muted-foreground'); panels.forEach(function (panel) { panel.classList.toggle('hidden', panel.id !== target); }); }); });
+      lucide.createIcons();
+    })();
+  </script>
+</body>
+</html>

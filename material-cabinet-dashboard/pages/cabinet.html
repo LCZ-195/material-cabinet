@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收纳柜格位</title>
+    <style id="theme-vars">
+/* Material Cabinet Dashboard — colors_and_type.css */
+/* Single primary hue: cyan-teal. No secondary/accent brand hue. */
+
+:root {
+  /* Primary scale (cyan-teal) */
+  --mc-primary-50: #ecfeff;
+  --mc-primary-100: #cffafe;
+  --mc-primary-200: #a5f3fc;
+  --mc-primary-300: #67e8f9;
+  --mc-primary-400: #22d3ee;
+  --mc-primary-500: #06b6d4;
+  --mc-primary-600: #0891b2;
+  --mc-primary-700: #0e7490;
+  --mc-primary-800: #155e75;
+  --mc-primary-900: #164e63;
+  --mc-primary-950: #083344;
+
+  /* Neutral scale (slate) */
+  --mc-neutral-0: #ffffff;
+  --mc-neutral-50: #f8fafc;
+  --mc-neutral-100: #f1f5f9;
+  --mc-neutral-200: #e2e8f0;
+  --mc-neutral-300: #cbd5e1;
+  --mc-neutral-400: #94a3b8;
+  --mc-neutral-500: #64748b;
+  --mc-neutral-600: #475569;
+  --mc-neutral-700: #334155;
+  --mc-neutral-800: #1e293b;
+  --mc-neutral-900: #0f172a;
+  --mc-neutral-950: #020617;
+
+  /* Semantic status colors */
+  --mc-state-success: #22c55e;
+  --mc-state-success-bg: rgba(34, 197, 94, 0.12);
+  --mc-state-warning: #f59e0b;
+  --mc-state-warning-bg: rgba(245, 158, 11, 0.12);
+  --mc-state-error: #ef4444;
+  --mc-state-error-bg: rgba(239, 68, 68, 0.12);
+  --mc-state-info: #3b82f6;
+  --mc-state-info-bg: rgba(59, 130, 246, 0.12);
+  --mc-status-ok: #16a34a;
+  --mc-status-warning: #d97706;
+  --mc-status-empty: #d4d4d4;
+  --mc-status-error: #dc2626;
+  --mc-status-error-border: #fecaca;
+  --mc-status-error-bg: #fef2f2;
+  --mc-compartment-fg: #525252;
+
+  /* Semantic aliases */
+  --mc-background: #fafafa;
+  --mc-foreground: #171717;
+  --mc-card: #ffffff;
+  --mc-card-foreground: #171717;
+  --mc-popover: #ffffff;
+  --mc-popover-foreground: #171717;
+  --mc-primary: #171717;
+  --mc-primary-foreground: #ffffff;
+  --mc-muted: #f5f5f5;
+  --mc-muted-foreground: #737373;
+  --mc-border: #e8e8e8;
+  --mc-input: #d4d4d4;
+  --mc-ring: #0070f3;
+  --mc-radius-small: 4px;
+  --mc-radius-medium: 8px;
+  --mc-radius-large: 12px;
+
+  /* Surface & depth */
+  --mc-surface-elevated: rgba(15, 23, 42, 0.72);
+  --mc-surface-hover: rgba(30, 41, 59, 0.6);
+
+  /* Typography */
+  --mc-font-sans: "Inter", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mc-font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Consolas", monospace;
+
+  /* Shadows (static <= 0.05 alpha, floating <= 0.18) */
+  --mc-shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.05);
+  --mc-shadow-md: 0 4px 12px rgba(2, 6, 23, 0.06);
+  --mc-shadow-lg: 0 10px 30px rgba(2, 6, 23, 0.10);
+  --mc-shadow-floating: 0 18px 50px rgba(2, 6, 23, 0.22);
+
+  /* Spacing scale */
+  --mc-space-1: 4px;
+  --mc-space-2: 8px;
+  --mc-space-3: 12px;
+  --mc-space-4: 16px;
+  --mc-space-5: 20px;
+  --mc-space-6: 24px;
+  --mc-space-8: 32px;
+  --mc-space-10: 40px;
+}
+
+/* Light mode toggle support */
+html.light {
+  --mc-background: #fafafa;
+  --mc-foreground: #171717;
+  --mc-card: #ffffff;
+  --mc-card-foreground: #171717;
+  --mc-popover: #ffffff;
+  --mc-popover-foreground: #171717;
+  --mc-muted: #f5f5f5;
+  --mc-muted-foreground: #737373;
+  --mc-border: #e8e8e8;
+  --mc-input: #d4d4d4;
+  --mc-surface-elevated: #ffffff;
+  --mc-surface-hover: #f7f7f7;
+  --mc-shadow-sm: none;
+  --mc-shadow-md: none;
+  --mc-shadow-lg: none;
+  --mc-shadow-floating: 0 18px 50px rgba(0, 0, 0, 0.12);
+}
+
+body {
+  font-family: var(--mc-font-sans);
+  background-color: var(--mc-background);
+  color: var(--mc-foreground);
+}
+
+.font-mono { font-family: var(--mc-font-mono); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--mc-background);
+    --color-foreground: var(--mc-foreground);
+    --color-card: var(--mc-card);
+    --color-card-foreground: var(--mc-card-foreground);
+    --color-popover: var(--mc-popover);
+    --color-popover-foreground: var(--mc-popover-foreground);
+    --color-primary: var(--mc-primary);
+    --color-primary-foreground: var(--mc-primary-foreground);
+    --color-muted: var(--mc-muted);
+    --color-muted-foreground: var(--mc-muted-foreground);
+    --color-border: var(--mc-border);
+    --color-input: var(--mc-input);
+    --color-ring: var(--mc-ring);
+    --radius-sm: var(--mc-radius-small);
+    --radius-md: var(--mc-radius-medium);
+    --radius-lg: var(--mc-radius-large);
+  }
+  @layer base {
+    body { background: var(--mc-background); color: var(--mc-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--mc-background); }
+      .text-background { color: var(--mc-background); }
+      .border-background { border-color: var(--mc-background); }
+      .ring-background { --tw-ring-color: var(--mc-background); }
+      .bg-foreground { background-color: var(--mc-foreground); }
+      .text-foreground { color: var(--mc-foreground); }
+      .border-foreground { border-color: var(--mc-foreground); }
+      .ring-foreground { --tw-ring-color: var(--mc-foreground); }
+      .bg-card { background-color: var(--mc-card); }
+      .text-card { color: var(--mc-card); }
+      .border-card { border-color: var(--mc-card); }
+      .ring-card { --tw-ring-color: var(--mc-card); }
+      .bg-card-foreground { background-color: var(--mc-card-foreground); }
+      .text-card-foreground { color: var(--mc-card-foreground); }
+      .border-card-foreground { border-color: var(--mc-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--mc-card-foreground); }
+      .bg-popover { background-color: var(--mc-popover); }
+      .text-popover { color: var(--mc-popover); }
+      .border-popover { border-color: var(--mc-popover); }
+      .ring-popover { --tw-ring-color: var(--mc-popover); }
+      .bg-popover-foreground { background-color: var(--mc-popover-foreground); }
+      .text-popover-foreground { color: var(--mc-popover-foreground); }
+      .border-popover-foreground { border-color: var(--mc-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--mc-popover-foreground); }
+      .bg-primary { background-color: var(--mc-primary); }
+      .text-primary { color: var(--mc-primary); }
+      .border-primary { border-color: var(--mc-primary); }
+      .ring-primary { --tw-ring-color: var(--mc-primary); }
+      .bg-primary-foreground { background-color: var(--mc-primary-foreground); }
+      .text-primary-foreground { color: var(--mc-primary-foreground); }
+      .border-primary-foreground { border-color: var(--mc-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--mc-primary-foreground); }
+      .bg-muted { background-color: var(--mc-muted); }
+      .text-muted { color: var(--mc-muted); }
+      .border-muted { border-color: var(--mc-muted); }
+      .ring-muted { --tw-ring-color: var(--mc-muted); }
+      .bg-muted-foreground { background-color: var(--mc-muted-foreground); }
+      .text-muted-foreground { color: var(--mc-muted-foreground); }
+      .border-muted-foreground { border-color: var(--mc-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--mc-muted-foreground); }
+      .bg-border { background-color: var(--mc-border); }
+      .text-border { color: var(--mc-border); }
+      .border-border { border-color: var(--mc-border); }
+      .ring-border { --tw-ring-color: var(--mc-border); }
+      .bg-input { background-color: var(--mc-input); }
+      .text-input { color: var(--mc-input); }
+      .border-input { border-color: var(--mc-input); }
+      .ring-input { --tw-ring-color: var(--mc-input); }
+      .bg-ring { background-color: var(--mc-ring); }
+      .text-ring { color: var(--mc-ring); }
+      .border-ring { border-color: var(--mc-ring); }
+      .ring-ring { --tw-ring-color: var(--mc-ring); }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+  <style id="critical-layout">
+    .app-shell { display: flex; min-height: 100vh; }
+    .app-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-main {
+      margin-left: 240px;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .app-header {
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .app-content {
+      flex: 1 1 auto;
+      padding: var(--mc-space-6);
+    }
+    .app-footer {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--mc-space-6);
+      font-size: 12px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--mc-space-3);
+      padding: var(--mc-space-3) var(--mc-space-4);
+      margin: 0 var(--mc-space-3);
+      border-radius: var(--mc-radius-medium);
+      color: var(--mc-muted-foreground);
+      text-decoration: none;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .nav-item:hover {
+      background-color: var(--mc-surface-hover);
+      color: var(--mc-foreground);
+    }
+    .nav-item.active {
+      background-color: var(--mc-state-info-bg);
+      color: var(--mc-ring);
+      font-weight: 500;
+    }
+    .nav-item.active [data-lucide] {
+      color: var(--mc-ring);
+    }
+    .search-input {
+      width: 320px;
+      padding-left: 36px;
+      padding-right: var(--mc-space-4);
+      height: 36px;
+      border-radius: var(--mc-radius-medium);
+      border: 1px solid var(--mc-border);
+      background-color: var(--mc-muted);
+      color: var(--mc-foreground);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .search-input:focus {
+      border-color: var(--mc-ring);
+      box-shadow: 0 0 0 2px var(--mc-state-info-bg);
+    }
+    .search-input::placeholder {
+      color: var(--mc-muted-foreground);
+    }
+    .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
+    .cabinet-slot-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+    .slot-card { min-width: 0; overflow: hidden; border: 1px solid var(--mc-border); border-radius: 8px; background: var(--mc-card); }
+    .slot-card-header { display: flex; align-items: center; justify-content: space-between; height: 31px; padding: 0 9px; border-bottom: 1px solid var(--mc-border); }
+    .slot-number { color: var(--mc-foreground); font: 600 12px/1 var(--mc-font-mono); }
+    .slot-state { color: var(--mc-muted-foreground); font-size: 10px; }
+    .slot-compartments { display: grid; grid-template-columns: 1fr 1fr; }
+    .slot-compartment { min-width: 0; padding: 7px 8px 8px; background: var(--mc-card); }
+    .slot-compartment + .slot-compartment { border-left: 1px solid var(--mc-border); }
+    .compartment-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 5px; }
+    .compartment-name { color: var(--mc-compartment-fg); font-size: 10px; font-weight: 600; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; background: var(--mc-status-ok); }
+    .status-dot.is-low { background: var(--mc-status-warning); }
+    .status-dot.is-empty { background: var(--mc-status-empty); }
+    .status-dot.is-error { background: var(--mc-status-error); }
+    .material-name { overflow: hidden; color: var(--mc-foreground); font-size: 11px; font-weight: 500; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+    .material-qty { margin-top: 3px; color: var(--mc-muted-foreground); font: 10px/1.2 var(--mc-font-mono); }
+    .slot-card.has-error { border-color: var(--mc-status-error-border); }
+    .slot-card.has-error .slot-card-header { background: var(--mc-status-error-bg); }
+    @media (max-width: 720px) {
+      .app-sidebar { width: 64px; }
+      .app-sidebar span, .app-sidebar > div:last-child { display: none; }
+      .app-main { margin-left: 64px; }
+      .app-content { padding: 16px; }
+      .app-header { padding: 0 16px; }
+      .search-input { width: min(42vw, 240px); }
+      .app-header > div:last-child { gap: 6px; }
+      .app-header button { padding-left: 10px; padding-right: 10px; }
+    }
+    @media (max-width: 520px) {
+      .app-header [data-dom-id="btn-import-bom"], .app-header > div:last-child > span, .app-header > div:last-child > div { display: none; }
+    }
+  </style>
+
+  <div class="app-shell">
+    <!-- 左侧固定侧边栏 -->
+    <aside class="app-sidebar bg-card border-r border-border" role="navigation" aria-label="主导航">
+      <!-- 品牌标识 -->
+      <div class="h-16 flex items-center gap-3 px-5 border-b border-border">
+        <div class="w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
+          <i data-lucide="box" class="w-5 h-5"></i>
+        </div>
+        <span class="text-lg font-semibold text-foreground tracking-tight">物料收纳柜</span>
+      </div>
+
+      <!-- 主导航 -->
+      <nav class="flex-1 py-4 overflow-y-auto no-scrollbar" aria-label="应用导航">
+        <a href="index.html" data-nav-key="index" data-dom-id="nav-index" class="nav-item" aria-current="false">
+          <i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i>
+          <span>概览</span>
+        </a>
+        <a href="cabinet.html" data-nav-key="cabinet" data-dom-id="nav-cabinet" class="nav-item active" aria-current="page">
+          <i data-lucide="grid-3x3" class="w-[18px] h-[18px]"></i>
+          <span>收纳柜</span>
+        </a>
+        <a href="materials.html" data-nav-key="materials" data-dom-id="nav-materials" class="nav-item">
+          <i data-lucide="database" class="w-[18px] h-[18px]"></i>
+          <span>物料</span>
+        </a>
+        <a href="bom.html" data-nav-key="bom" data-dom-id="nav-bom" class="nav-item">
+          <i data-lucide="file-spreadsheet" class="w-[18px] h-[18px]"></i>
+          <span>BOM</span>
+        </a>
+        <a href="analytics.html" data-nav-key="analytics" data-dom-id="nav-analytics" class="nav-item">
+          <i data-lucide="bar-chart-3" class="w-[18px] h-[18px]"></i>
+          <span>统计</span>
+        </a>
+        <a href="admin-settings.html" data-nav-key="admin" data-dom-id="nav-admin" class="nav-item">
+          <i data-lucide="settings-2" class="w-[18px] h-[18px]"></i>
+          <span>设置</span>
+        </a>
+      </nav>
+
+
+    </aside>
+
+    <!-- 右侧主区域 -->
+    <div class="app-main">
+      <!-- 顶部固定头部 -->
+      <header class="app-header bg-card border-b border-border flex items-center justify-between px-6" role="banner">
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+            <input type="text" class="search-input" placeholder="搜索物料、BOM、收纳柜…" aria-label="全局搜索" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="button" data-dom-id="btn-add-material" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            新增物料
+          </button>
+          <button type="button" data-dom-id="btn-import-bom" class="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card text-foreground text-sm font-medium hover:bg-muted transition-colors">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            导入BOM
+          </button>
+        </div>
+      </header>
+
+      <!-- 页面内容区 -->
+      <main class="app-content bg-background">
+        <div class="page-title-region mb-5">
+          <h1 class="text-2xl font-semibold text-foreground">收纳柜格位</h1>
+        </div>
+
+        <div class="page-actions-region mb-6 flex items-center gap-3">
+          <select data-dom-id="filter-cabinet-status" class="h-9 px-3 rounded-md border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" aria-label="格位状态筛选">
+            <option value="all">全部</option>
+            <option value="occupied">已占用</option>
+            <option value="free">空闲</option>
+          </select>
+          <button type="button" data-dom-id="btn-batch-pick" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            <i data-lucide="package-check" class="w-4 h-4"></i>
+            批量领料
+          </button>
+        </div>
+
+        <div class="page-content space-y-6">
+          <!-- 顶部摘要条 -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="rounded-lg border border-border bg-card p-4">
+              <div class="text-xs text-muted-foreground">总格位</div>
+              <div id="stat-total" class="text-2xl font-semibold text-foreground mt-1">--</div>
+            </div>
+            <div class="rounded-lg border border-border bg-card p-4">
+              <div class="text-xs text-muted-foreground">已占用</div>
+              <div id="stat-occupied" class="text-2xl font-semibold text-foreground mt-1">--</div>
+            </div>
+            <div class="rounded-lg border border-border bg-card p-4">
+              <div class="text-xs text-muted-foreground">空闲</div>
+              <div id="stat-empty" class="text-2xl font-semibold text-foreground mt-1">--</div>
+            </div>
+            <div class="rounded-lg border border-border bg-card p-4">
+              <div class="text-xs text-muted-foreground">低库存</div>
+              <div id="stat-low" class="text-2xl font-semibold text-foreground mt-1">--</div>
+            </div>
+          </div>
+
+          <!-- 收纳柜网格 -->
+          <div class="rounded-lg border border-border bg-card p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h2 class="text-sm font-medium text-foreground">收纳柜格位</h2>
+              <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full" style="background-color: var(--mc-state-success);"></span>
+                  充足
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full" style="background-color: var(--mc-state-warning);"></span>
+                  偏低
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full" style="background-color: var(--mc-state-error);"></span>
+                  异常 / 空
+                </span>
+              </div>
+            </div>
+            <div id="cabinet-grid" class="cabinet-slot-grid" aria-label="80 个实体格位">
+              <!-- 80 个实体格位由页面脚本生成 -->
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- 底部状态栏 -->
+      <footer class="app-footer bg-background border-t border-border text-muted-foreground" role="contentinfo">
+        <span class="flex items-center gap-2">
+          <i data-lucide="package" class="w-3.5 h-3.5"></i>
+          物料收纳柜 v1.15.7
+        </span>
+        <span class="flex items-center gap-2" data-dom-id="footer-refresh-time">
+          <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+          上次刷新: --
+        </span>
+      </footer>
+    </div>
+  </div>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    [data-icon] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-position: center;
+      background-color: currentColor;
+    }
+  </style>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

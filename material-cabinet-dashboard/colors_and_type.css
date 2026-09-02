@@ -1,0 +1,111 @@
+/* Material Cabinet Dashboard — colors_and_type.css */
+/* Single primary hue: cyan-teal. No secondary/accent brand hue. */
+
+:root {
+  /* Primary scale (cyan-teal) */
+  --mc-primary-50: #ecfeff;
+  --mc-primary-100: #cffafe;
+  --mc-primary-200: #a5f3fc;
+  --mc-primary-300: #67e8f9;
+  --mc-primary-400: #22d3ee;
+  --mc-primary-500: #06b6d4;
+  --mc-primary-600: #0891b2;
+  --mc-primary-700: #0e7490;
+  --mc-primary-800: #155e75;
+  --mc-primary-900: #164e63;
+  --mc-primary-950: #083344;
+
+  /* Neutral scale (slate) */
+  --mc-neutral-0: #ffffff;
+  --mc-neutral-50: #f8fafc;
+  --mc-neutral-100: #f1f5f9;
+  --mc-neutral-200: #e2e8f0;
+  --mc-neutral-300: #cbd5e1;
+  --mc-neutral-400: #94a3b8;
+  --mc-neutral-500: #64748b;
+  --mc-neutral-600: #475569;
+  --mc-neutral-700: #334155;
+  --mc-neutral-800: #1e293b;
+  --mc-neutral-900: #0f172a;
+  --mc-neutral-950: #020617;
+
+  /* Semantic status colors */
+  --mc-state-success: #22c55e;
+  --mc-state-success-bg: rgba(34, 197, 94, 0.12);
+  --mc-state-warning: #f59e0b;
+  --mc-state-warning-bg: rgba(245, 158, 11, 0.12);
+  --mc-state-error: #ef4444;
+  --mc-state-error-bg: rgba(239, 68, 68, 0.12);
+  --mc-state-info: #3b82f6;
+  --mc-state-info-bg: rgba(59, 130, 246, 0.12);
+
+  /* Semantic aliases */
+  --mc-background: #fafafa;
+  --mc-foreground: #171717;
+  --mc-card: #ffffff;
+  --mc-card-foreground: #171717;
+  --mc-popover: #ffffff;
+  --mc-popover-foreground: #171717;
+  --mc-primary: #171717;
+  --mc-primary-foreground: #ffffff;
+  --mc-muted: #f5f5f5;
+  --mc-muted-foreground: #737373;
+  --mc-border: #e8e8e8;
+  --mc-input: #d4d4d4;
+  --mc-ring: #0070f3;
+  --mc-radius-small: 4px;
+  --mc-radius-medium: 8px;
+  --mc-radius-large: 12px;
+
+  /* Surface & depth */
+  --mc-surface-elevated: #ffffff;
+  --mc-surface-hover: #f7f7f7;
+
+  /* Typography */
+  --mc-font-sans: "Inter", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mc-font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Consolas", monospace;
+
+  /* Shadows (static <= 0.05 alpha, floating <= 0.18) */
+  --mc-shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.05);
+  --mc-shadow-md: 0 4px 12px rgba(2, 6, 23, 0.05);
+  --mc-shadow-lg: 0 10px 30px rgba(2, 6, 23, 0.05);
+  --mc-shadow-floating: 0 18px 50px rgba(2, 6, 23, 0.22);
+
+  /* Spacing scale */
+  --mc-space-1: 4px;
+  --mc-space-2: 8px;
+  --mc-space-3: 12px;
+  --mc-space-4: 16px;
+  --mc-space-5: 20px;
+  --mc-space-6: 24px;
+  --mc-space-8: 32px;
+  --mc-space-10: 40px;
+}
+
+/* Light mode toggle support */
+html.light {
+  --mc-background: #f8fafc;
+  --mc-foreground: #0f172a;
+  --mc-card: #ffffff;
+  --mc-card-foreground: #0f172a;
+  --mc-popover: #ffffff;
+  --mc-popover-foreground: #0f172a;
+  --mc-muted: #f1f5f9;
+  --mc-muted-foreground: #64748b;
+  --mc-border: rgba(100, 116, 139, 0.18);
+  --mc-input: rgba(100, 116, 139, 0.18);
+  --mc-surface-elevated: rgba(255, 255, 255, 0.78);
+  --mc-surface-hover: rgba(241, 245, 249, 0.7);
+  --mc-shadow-sm: none;
+  --mc-shadow-md: none;
+  --mc-shadow-lg: none;
+  --mc-shadow-floating: 0 18px 50px rgba(0, 0, 0, 0.12);
+}
+
+body {
+  font-family: var(--mc-font-sans);
+  background-color: var(--mc-background);
+  color: var(--mc-foreground);
+}
+
+.font-mono { font-family: var(--mc-font-mono); }
