@@ -171,7 +171,7 @@ python main.py
 
 - 启动自动检查失败不会阻止程序运行；无 Token 时可以下载库存，但不会上传。
 
-- 发布流程：构建 `物料收纳柜.exe`，计算 SHA-256，创建 GitHub Release（tag 使用版本号，如 `v1.15.7`），上传 EXE 和校验文件。
+- 发布流程：构建 `物料收纳柜.exe`，计算 SHA-256，创建 GitHub Release（tag 使用版本号，如 `v1.15.7`），以 ASCII 资产名上传（如 `material-cabinet-v1.15.7.exe`，避免 Unicode 资产名经 API 上传时被改名为 `default.exe`），同时上传与 EXE 资产名逐字一致的 `SHA256.txt`。
 
 ### 7. 数据管理（设置页）
 
