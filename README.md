@@ -169,7 +169,7 @@ python main.py
 
 - 库存同步只上传 `materials` 与 `inventories` 的白名单字段，使用稳定的格位编码，不上传 `app_settings`、日志、BOM 路径或 API 密钥；远端记录按 `update_time` 合并。
 
-- 启动自动检查失败不会阻止程序运行；无 Token 时可以下载库存，但不会上传。
+- 启动自动检查失败不会阻止程序运行；私有仓库的版本下载与库存下载、上传都需要在设置页配置 Token。
 
 - 发布流程：构建 `物料收纳柜.exe`，计算 SHA-256，创建 GitHub Release（tag 使用版本号，如 `v1.15.7`），以 ASCII 资产名上传（如 `material-cabinet-v1.15.7.exe`，避免 Unicode 资产名经 API 上传时被改名为 `default.exe`），同时上传与 EXE 资产名逐字一致的 `SHA256.txt`。
 
