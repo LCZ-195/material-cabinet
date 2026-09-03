@@ -156,7 +156,7 @@ assert _snapshot_version(empty_snapshot) == _snapshot_version(dict(empty_snapsho
 
 class FakeSync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.16.0")
+        super().__init__(app_version="2.16.1")
         self.download_calls = 0
         self.upload_calls = 0
 
@@ -187,7 +187,7 @@ assert result["ok"] and sync.upload_calls == 1 and sync.download_calls == 0, \
 # ---- 9) 只读设备降级：下载成功但未配置 Token 时，应部分成功而非整体失败 ----
 class FakeReadonlySync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.16.0")
+        super().__init__(app_version="2.16.1")
 
     def _snapshot(self):
         snapshot = dict(empty_snapshot)
@@ -220,7 +220,7 @@ assert _Backend._slot_status(0, 0, False) == "empty", "空仓恒为空状态"
 # ---- 11) 云端空快照收敛：空库存快照 = 上游已清空，本地同步清空且不得回传 ----
 class FakeCloudEmpty(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.16.0")
+        super().__init__(app_version="2.16.1")
         self.upload_calls = 0
 
     def _snapshot(self):

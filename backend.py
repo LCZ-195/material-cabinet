@@ -68,7 +68,7 @@ class Backend:
         self._lcsc = LCSCApi()
         self._matcher = LocalParameterMatcher()
         self._ai = DeepSeekService()
-        self._github = GitHubSyncService("物料收纳柜", "2.16.0")
+        self._github = GitHubSyncService("物料收纳柜", "2.16.1")
 
     # ================================================================
     # 基础辅助

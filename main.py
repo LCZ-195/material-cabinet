@@ -45,7 +45,7 @@ from backend import Backend
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "2.16.0"
+APP_VERSION = "2.16.1"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -593,6 +593,13 @@ BRIDGE_JS = r"""
     if (ok.focus) setTimeout(function () { ok.focus(); }, 50);
   }
   function setActionBusy(buttons, busy, label) {
+    /* 首次忙碌时注入一个全局旋转指示样式（仅一次） */
+    if (busy && !window.__mcSpinStyle) {
+      window.__mcSpinStyle = true;
+      var st = document.createElement('style');
+      st.textContent = '.mc-action-spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:mc-spin .7s linear infinite;margin-left:4px;vertical-align:-1px;flex:none;}@keyframes mc-spin{to{transform:rotate(360deg)}}';
+      (document.head || document.documentElement).appendChild(st);
+    }
     buttons.filter(Boolean).forEach(function (button) {
       if (busy) {
         if (!button.dataset.actionHtml) button.dataset.actionHtml = button.innerHTML;
@@ -613,12 +620,20 @@ BRIDGE_JS = r"""
             button.appendChild(runtimeLabel);
           }
         }
+        if (!button.querySelector('.mc-action-spin')) {
+          var spin = document.createElement('span');
+          spin.className = 'mc-action-spin';
+          spin.setAttribute('aria-hidden', 'true');
+          button.appendChild(spin);
+        }
       } else {
         button.disabled = false;
         button.removeAttribute('aria-busy');
         button.classList.remove('mc-action-busy');
         if (button.dataset.actionHtml) button.innerHTML = button.dataset.actionHtml;
         delete button.dataset.actionHtml;
+        var spin = button.querySelector('.mc-action-spin');
+        if (spin) spin.remove();
       }
     });
     refreshIcons();
@@ -2237,7 +2252,7 @@ BRIDGE_JS = r"""
   }
   function bindSyncActions() {
     $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]').forEach(function (el) {
-      if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', function () { runVersionCheck(false); }); }
+      if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', function () { runVersionCheck(true); }); }
     });
     $$('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]').forEach(function (el) {
       if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', runInventoryCheck); }
@@ -2330,15 +2345,22 @@ BRIDGE_JS = r"""
     }
     api = apiObj;
 
+    /* 同步按钮优先绑定（独立于各页 init），保证任何页面页脚检查按钮始终可用 */
+    bindSyncActions();
+
     var page = getCurrentPage();
-    switch (page) {
-      case 'index': initIndex(); break;
-      case 'cabinet': initCabinet(); break;
-      case 'materials': initMaterials(); break;
-      case 'bom': initBom(); break;
-      case 'analytics': initAnalytics(); break;
-      case 'admin-settings': initAdmin(); break;
-      case 'component-library': initComponentLibrary(); break;
+    var inits = {
+      'index': initIndex,
+      'cabinet': initCabinet,
+      'materials': initMaterials,
+      'bom': initBom,
+      'analytics': initAnalytics,
+      'admin-settings': initAdmin,
+      'component-library': initComponentLibrary
+    };
+    if (inits[page]) {
+      try { inits[page](); }
+      catch (err) { if (window.console && console.error) console.error('页面初始化异常：' + page, err); }
     }
     bindGlobalNav();
     updateVersionLabels();
