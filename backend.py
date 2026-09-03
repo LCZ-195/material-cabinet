@@ -51,6 +51,8 @@ from services.lcsc_service import LCSCApi, LocalParameterMatcher
 from services.deepseek_service import DeepSeekService
 from services.github_sync_service import GitHubSyncService
 
+logger = logging.getLogger(__name__)
+
 
 class Backend:
     """业务门面：为桌面层提供统一、可 JSON 序列化的调用接口。"""
@@ -66,7 +68,7 @@ class Backend:
         self._lcsc = LCSCApi()
         self._matcher = LocalParameterMatcher()
         self._ai = DeepSeekService()
-        self._github = GitHubSyncService("物料收纳柜", "1.15.8")
+        self._github = GitHubSyncService("物料收纳柜", "1.15.9")
 
     # ================================================================
     # 基础辅助
@@ -926,10 +928,12 @@ class Backend:
         return self._github.schedule_update()
 
     def check_github_inventory(self):
-        return self._github.download_inventory()
+        with self._lock:
+            return self._github.download_inventory()
 
     def sync_github_inventory(self):
-        return self._github.sync_inventory()
+        with self._lock:
+            return self._github.sync_inventory()
 
     def clear_demo(self):
         with self._lock:

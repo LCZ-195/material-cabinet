@@ -45,7 +45,7 @@ from backend import Backend
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "1.15.8"
+APP_VERSION = "1.15.9"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -2131,8 +2131,8 @@ BRIDGE_JS = r"""
     refreshIcons();
   }
   function runVersionCheck(autoUpdate) {
-    var button = $('[data-dom-id="btn-check-version"]');
-    if (button) button.disabled = true;
+    var buttons = $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]');
+    buttons.forEach(function (b) { b.disabled = true; });
     api.check_github_version().then(function (res) {
       var data = res && res.data || {};
       if (!res || !res.ok) showToast((res && res.error) || '版本检查失败', 'error');
@@ -2148,22 +2148,24 @@ BRIDGE_JS = r"""
           if (getCurrentPage() === 'admin-settings') window.scrollTo(0, 0);
         }
       } else showToast(data.message || '当前已是最新版本', 'success');
-    }).catch(function (err) { showToast('版本检查失败：' + err, 'error'); }).finally(function () { if (button) button.disabled = false; });
+    }).catch(function (err) { showToast('版本检查失败：' + err, 'error'); }).finally(function () { buttons.forEach(function (b) { b.disabled = false; }); });
   }
   function runInventoryCheck() {
-    var button = $('[data-dom-id="btn-check-inventory"]');
-    if (button) button.disabled = true;
+    var buttons = $$('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]');
+    buttons.forEach(function (b) { b.disabled = true; });
     api.sync_github_inventory().then(function (res) {
       if (res && res.ok) { showToast((res.data && res.data.message) || '库存同步完成', 'success'); setTimeout(function () { window.location.reload(); }, 700); }
       else showToast((res && res.error) || '库存同步失败', 'error');
-    }).catch(function (err) { showToast('库存同步失败：' + err, 'error'); }).finally(function () { if (button) button.disabled = false; });
+    }).catch(function (err) { showToast('库存同步失败：' + err, 'error'); }).finally(function () { buttons.forEach(function (b) { b.disabled = false; }); });
   }
   function bindSyncActions() {
     ensureSyncActions();
-    var version = $('[data-dom-id="btn-check-version"]');
-    if (version && !version.dataset.bridgeBound) { version.dataset.bridgeBound = '1'; version.addEventListener('click', function () { runVersionCheck(false); }); }
-    var inventory = $('[data-dom-id="btn-check-inventory"]');
-    if (inventory && !inventory.dataset.bridgeBound) { inventory.dataset.bridgeBound = '1'; inventory.addEventListener('click', runInventoryCheck); }
+    $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]').forEach(function (el) {
+      if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', function () { runVersionCheck(false); }); }
+    });
+    $$('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]').forEach(function (el) {
+      if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', runInventoryCheck); }
+    });
   }
   function autoSyncOnce() {
     if (sessionStorage.getItem('github_auto_checked')) return;

@@ -92,6 +92,25 @@ class BomImporter:
                 best_mapping = cls._match_columns([])
         return best_idx, best_mapping
 
+    @staticmethod
+    def _parse_qty(val):
+        """数量解析：兼容千分位(1,500)、欧洲小数(1,5)、百分号(5%)、全角逗号；失败记 0 并告警"""
+        if val is None:
+            return 0
+        s = str(val).strip().replace("％", "%").replace("，", ",")
+        if not s:
+            return 0
+        s = s.split("%", 1)[0].strip()
+        if re.search(r",\d{1,2}$", s) and not re.match(r"^\d{1,3}(,\d{3})+$", s):
+            s = s.replace(",", ".")
+        else:
+            s = s.replace(",", "")
+        try:
+            return max(0, int(round(float(s))))
+        except (ValueError, TypeError):
+            logger.warning("BOM 数量列无法解析，按 0 处理: %r", val)
+            return 0
+
     @classmethod
     def _parse_excel(cls, path: str) -> List[Dict]:
         from openpyxl import load_workbook
@@ -130,13 +149,7 @@ class BomImporter:
                     if val is not None:
                         item[field] = str(val).strip() if not isinstance(val, (int, float)) else val
             # 数量转整数
-            if "required_qty" in item:
-                try:
-                    item["required_qty"] = int(float(str(item["required_qty"]).replace(",", "")))
-                except (ValueError, TypeError):
-                    item["required_qty"] = 0
-            else:
-                item["required_qty"] = 0
+            item["required_qty"] = cls._parse_qty(item.get("required_qty"))
             result.append(item)
         return result
 
@@ -167,13 +180,7 @@ class BomImporter:
             for field, col_idx in mapping.items():
                 if col_idx is not None and col_idx < len(row):
                     item[field] = row[col_idx].strip()
-            if "required_qty" in item:
-                try:
-                    item["required_qty"] = int(float(item["required_qty"].replace(",", "")))
-                except (ValueError, TypeError):
-                    item["required_qty"] = 0
-            else:
-                item["required_qty"] = 0
+            item["required_qty"] = cls._parse_qty(item.get("required_qty"))
             result.append(item)
         return result
 

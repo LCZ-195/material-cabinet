@@ -253,6 +253,18 @@ class Inventory:
             """, (delta, inv_id))
 
     @staticmethod
+    def deduct_stock(inv_id, quantity):
+        """条件扣减：余额足够才扣（单条 UPDATE 原子完成，防先查后扣的并发超扣）"""
+        with get_cursor() as cur:
+            cur.execute("""
+                UPDATE inventories
+                SET quantity = quantity - ?,
+                    update_time = CURRENT_TIMESTAMP
+                WHERE id=? AND quantity >= ?
+            """, (quantity, inv_id, quantity))
+            return cur.rowcount > 0
+
+    @staticmethod
     def remove_from_slot(slot_id, inv_id=None):
         """移除指定库存条目（或清空格位所有）"""
         with get_cursor() as cur:
@@ -300,7 +312,7 @@ class Inventory:
         if lcsc_code:
             lc = lcsc_code.strip().upper()
             rows = _run_or(
-                ["m.lcsc_code = ?", list_contains_sql("m.lcsc_code"),
+                ["UPPER(m.lcsc_code) = ?", list_contains_sql("m.lcsc_code"),
                  list_contains_sql("m.supplier_code")],
                 [lc, f"%,{lc},%", f"%,{lc},%"])
             if rows:
@@ -308,19 +320,20 @@ class Inventory:
         for sp in split_part_numbers(supplier_part):
             if sp.upper().startswith("C"):
                 rows = _run_or(
-                    ["m.supplier_code = ?", "m.lcsc_code = ?",
+                    ["UPPER(m.supplier_code) = ?", "UPPER(m.lcsc_code) = ?",
                      list_contains_sql("m.supplier_code"),
                      list_contains_sql("m.lcsc_code")],
                     [sp, sp.upper(), f"%,{sp},%", f"%,{sp.upper()},%"])
             else:
                 rows = _run_or(
-                    ["m.supplier_code = ?", list_contains_sql("m.supplier_code")],
+                    ["UPPER(m.supplier_code) = UPPER(?)",
+                     list_contains_sql("m.supplier_code")],
                     [sp, f"%,{sp},%"])
             if rows:
                 return rows
-        # 1) 编码精确
+        # 1) 编码精确（大小写不敏感，与 LIKE 层口径一致）
         if material_code:
-            rows = _run(["m.material_code = ?"], [material_code])
+            rows = _run(["UPPER(m.material_code) = UPPER(?)"], [material_code])
             if rows:
                 return rows
         # 2) 编码模糊

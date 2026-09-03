@@ -207,8 +207,8 @@ class GitHubSyncService:
                 except (TypeError, ValueError):
                     values[fields.index("min_stock")] = 0
                 old = existing.get(key)
-                incoming_time = str(item.get("update_time") or "")
-                if old and incoming_time and str(old.get("update_time") or "") >= incoming_time:
+                incoming_time = _ts_key(item.get("update_time"))
+                if old and incoming_time and _ts_key(old.get("update_time")) >= incoming_time:
                     material_ids[key] = old["id"]
                     continue
                 if old:
@@ -231,8 +231,8 @@ class GitHubSyncService:
                     continue
                 cur.execute("SELECT id,update_time FROM inventories WHERE slot_id=? AND material_id=? AND COALESCE(batch_no,'')=COALESCE(?, '')", (slot_id, material_id, item.get("batch_no")))
                 old = cur.fetchone()
-                incoming_time = str(item.get("update_time") or "")
-                if old and str(old[1] or "") >= incoming_time:
+                incoming_time = _ts_key(item.get("update_time"))
+                if old and _ts_key(old[1]) >= incoming_time:
                     continue
                 try:
                     quantity = max(0, int(item.get("quantity") or 0))
@@ -352,6 +352,22 @@ def _download_checksum(url, asset_name):
     return ""
 
 
+def _ts_key(value):
+    """时间戳归一化：T/Z/毫秒/斜杠等格式统一为可比较的 'YYYY-MM-DD HH:MM:SS'"""
+    s = str(value or "").strip()
+    if not s:
+        return ""
+    t = s.replace("T", " ").replace("Z", "").split(".", 1)[0].strip()
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
+                "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M",
+                "%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(t, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    return t
+
+
 def _download(url, path):
     headers = _auth_headers()
     headers["Accept"] = "application/octet-stream"
@@ -361,7 +377,9 @@ def _download(url, path):
 
 
 def _schedule_replace(current, downloaded):
-    script = os.path.join(tempfile.gettempdir(), "material-cabinet-update.ps1")
+    script = os.path.join(
+        tempfile.gettempdir(),
+        "material-cabinet-update-{}.ps1".format(os.getpid()))
     current_q = current.replace("'", "''")
     downloaded_q = downloaded.replace("'", "''")
     backup_q = (current + ".backup").replace("'", "''")

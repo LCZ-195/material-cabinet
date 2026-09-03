@@ -25,14 +25,19 @@ class InventoryService:
 
     @staticmethod
     def stock_out(inv_id, quantity, note=None):
-        """出库（从指定库存条目扣除）"""
+        """出库（从指定库存条目扣除，条件更新原子完成防并发超扣）"""
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            raise ValueError("数量必须是整数")
+        if quantity <= 0:
+            raise ValueError("数量必须大于0")
         inv = Inventory.get(inv_id)
         if not inv:
             raise ValueError("库存记录不存在")
-        current = int(inv["quantity"])
-        if current < quantity:
-            raise ValueError(f"库存不足（当前 {current}，需取出 {quantity}）")
-        Inventory.add_stock(inv_id, -quantity)
+        if not Inventory.deduct_stock(inv_id, quantity):
+            raise ValueError(
+                f"库存不足（当前 {int(inv['quantity'])}，需取出 {quantity}）")
         OperationLog.add(
             "outbound", "inventory", inv_id,
             {"inventory_id": inv_id, "material_id": inv.get("material_id"),
@@ -67,7 +72,13 @@ class InventoryService:
 
     @staticmethod
     def adjust_stock(inv_id, new_qty, reason=""):
-        """盘点调平"""
+        """盘点调平（禁止负库存）"""
+        try:
+            new_qty = int(new_qty)
+        except (TypeError, ValueError):
+            raise ValueError("数量必须是整数")
+        if new_qty < 0:
+            raise ValueError("库存数量不能为负数")
         inv = Inventory.get(inv_id)
         if not inv:
             raise ValueError("库存记录不存在")

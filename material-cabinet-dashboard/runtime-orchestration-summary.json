@@ -1,0 +1,1404 @@
+{
+  "schemaVersion": "1.0",
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.08.06.19.15.08",
+    "release": "prompt-base-cloud-ssot-migration",
+    "version_source": "skill-release-manifest.json",
+    "read_status": "ok"
+  },
+  "project": {
+    "resolvedLane": "complex_html_page",
+    "intentProfile": {
+      "caseFamily": "free_exploration",
+      "sourceType": "code_functional_requirements"
+    },
+    "selectedIntentWorkflowRead": true,
+    "contextRequirementsLoaded": [
+      {
+        "path": "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/page-rendering-quality-gate.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/design-artifact-validation.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/delivery-evidence-contract.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "visual-experience/visual-experience-guidelines.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "visual-experience/visual-checkpoint-protocol.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      }
+    ],
+    "contextReadScope": "complex_html_page",
+    "readScopeLedger": [
+      {
+        "path": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+        "reason": "lane runbook",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "path": "intent-workflows/intent-project-complex-build/00-requirement-and-style-intake.md",
+        "reason": "phase 0-1",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "path": "intent-workflows/intent-project-complex-build/01-graphic-asset-preparation.md",
+        "reason": "phase 2.5",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "path": "intent-workflows/intent-project-complex-build/02-page-composition.md",
+        "reason": "phase 3",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "path": "intent-workflows/intent-project-complex-build/03-interaction-validation-delivery.md",
+        "reason": "phase 3.5-5",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "path": "shared-runtime/design-artifact-formats/design-project-file-format.md",
+        "reason": "format reference",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "path": "shared-runtime/orchestration-summary-contract/orchestration-summary-contract.md",
+        "reason": "summary contract",
+        "ownerLane": "complex_html_page"
+      },
+      {
+        "actor": "page-sub-agent",
+        "lane": "complex_html_page",
+        "path": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "reason": "page runtime guide",
+        "scopeClass": "page-runtime",
+        "declaredBeforeRead": true,
+        "recordedAt": "2026-08-26T17:35:17.957Z",
+        "nodeId": "page-index",
+        "htmlSrc": "pages/index.html"
+      },
+      {
+        "actor": "page-sub-agent",
+        "lane": "complex_html_page",
+        "path": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md",
+        "reason": "dispatch contract",
+        "scopeClass": "dispatch-contract",
+        "declaredBeforeRead": true,
+        "recordedAt": "2026-08-26T17:35:17.957Z",
+        "nodeId": "page-index",
+        "htmlSrc": "pages/index.html"
+      }
+    ],
+    "operation": "create",
+    "deviceType": "desktop",
+    "projectName": "物料收纳柜可视化工作台",
+    "designRead": "PC desktop inventory dashboard / electronics material cabinet operators / professional tool tone / high data density / avoid low-contrast grids and emoji icons",
+    "designDials": {
+      "layoutVariance": 3,
+      "motionIntensity": 2,
+      "visualDensity": 4
+    },
+    "cssPreflightEvidence": {
+      "command": "node {SKILL_DIR}/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs colors_and_type.css .preflight/preflight.html --title='物料收纳柜可视化工作台' --lang=zh --prefix=mc",
+      "outputPath": ".preflight/preflight.html",
+      "success": true,
+      "verified": [
+        "id=theme-vars",
+        "id=semantic-token-fallback",
+        "@theme inline",
+        "Tailwind CDN",
+        "Lucide script",
+        "html class"
+      ],
+      "prefixMode": "standard"
+    },
+    "mobileNavigation": {
+      "applies": false
+    },
+    "sharedProjectShellContract": {
+      "desktopNavigation": {
+        "type": "sidebar",
+        "widthPx": 240,
+        "position": "left-fixed",
+        "items": [
+          {
+            "key": "index",
+            "label": "概览",
+            "icon": "layout-dashboard"
+          },
+          {
+            "key": "cabinet",
+            "label": "收纳柜",
+            "icon": "grid-3x3"
+          },
+          {
+            "key": "materials",
+            "label": "物料",
+            "icon": "database"
+          },
+          {
+            "key": "bom",
+            "label": "BOM",
+            "icon": "file-spreadsheet"
+          },
+          {
+            "key": "analytics",
+            "label": "统计",
+            "icon": "bar-chart-3"
+          }
+        ]
+      },
+      "topHeader": {
+        "heightPx": 64,
+        "includes": [
+          "global search",
+          "action shortcuts"
+        ]
+      },
+      "surfaceDepthModel": "border-led static cards on near-black surfaces, blue only for focus and state, no static card shadows",
+      "radiusScale": {
+        "sm": 4,
+        "md": 8,
+        "lg": 8,
+        "full": 9999
+      },
+      "typographySystem": "Inter + PingFang SC sans-serif, JetBrains Mono for codes/quantities",
+      "continuityAnchors": [
+        "Vercel light surface palette on every page (near-black primary, blue focus/state)",
+        "Left sidebar navigation with identical item order and active state",
+        "Border-led cards with max 8px radius and no static shadows",
+        "Inter + PingFang SC typography and JetBrains Mono for numbers"
+      ]
+    },
+    "visualQualityCheckpoints": [
+      {
+        "checkpointId": "vq-anchor",
+        "dimension": "visual-anchor",
+        "expected": "Left sidebar + top header frame carries brand identity; cabinet grid or KPI cards are the dominant content anchor per page",
+        "evidenceTarget": "partials/project-shell.html"
+      },
+      {
+        "checkpointId": "vq-hierarchy",
+        "dimension": "information-hierarchy",
+        "expected": "Page title + primary actions at top, data tables/grids in middle, secondary meta on right or bottom",
+        "evidenceTarget": "pages/*.html"
+      },
+      {
+        "checkpointId": "vq-structure",
+        "dimension": "composition-structure",
+        "expected": "12-column responsive grid, consistent card gaps, no first-screen overlap, sidebar remains fixed",
+        "evidenceTarget": "pages/*.html"
+      },
+      {
+        "checkpointId": "vq-implementation",
+        "dimension": "implementation-strategy",
+        "expected": "Tailwind semantic tokens + brand CSS variables, Lucide icons, static critical-layout CSS for the cabinet grid",
+        "evidenceTarget": "colors_and_type.css + pages/*.html"
+      }
+    ],
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": [
+          "page-index",
+          "page-cabinet",
+          "page-materials",
+          "page-bom",
+          "page-analytics",
+          "page-admin-settings"
+        ],
+        "output": "partials/project-shell.html",
+        "sharedRegions": [
+          "html-head",
+          "body-frame",
+          "top-header",
+          "left-sidebar",
+          "main-content-wrapper",
+          "footer-status-bar"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "SLOT: pageTitle",
+          "SLOT: activeNavItem",
+          "SLOT: pageActions",
+          "SLOT: mainContent"
+        ],
+        "status": "generated",
+        "children": [
+          {
+            "nodeId": "gen-page-index",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-index"
+            ],
+            "output": "pages/index.html",
+            "sharedRegions": [
+              "project-shell"
+            ],
+            "privateRegions": [
+              "dashboard-content"
+            ],
+            "mutableSlots": [
+              "SLOT: pageTitle=概览仪表盘",
+              "SLOT: activeNavItem=index"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-cabinet",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-cabinet"
+            ],
+            "output": "pages/cabinet.html",
+            "sharedRegions": [
+              "project-shell"
+            ],
+            "privateRegions": [
+              "cabinet-grid-content"
+            ],
+            "mutableSlots": [
+              "SLOT: pageTitle=收纳柜格位",
+              "SLOT: activeNavItem=cabinet"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-materials",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-materials"
+            ],
+            "output": "pages/materials.html",
+            "sharedRegions": [
+              "project-shell"
+            ],
+            "privateRegions": [
+              "material-table-content"
+            ],
+            "mutableSlots": [
+              "SLOT: pageTitle=物料主数据",
+              "SLOT: activeNavItem=materials"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-bom",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-bom"
+            ],
+            "output": "pages/bom.html",
+            "sharedRegions": [
+              "project-shell"
+            ],
+            "privateRegions": [
+              "bom-workspace-content"
+            ],
+            "mutableSlots": [
+              "SLOT: pageTitle=BOM 导入与领料",
+              "SLOT: activeNavItem=bom"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-analytics",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-analytics"
+            ],
+            "output": "pages/analytics.html",
+            "sharedRegions": [
+              "project-shell"
+            ],
+            "privateRegions": [
+              "analytics-content"
+            ],
+            "mutableSlots": [
+              "SLOT: pageTitle=统计与日志",
+              "SLOT: activeNavItem=analytics"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-admin-settings",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-admin-settings"
+            ],
+            "output": "pages/admin-settings.html",
+            "sharedRegions": [
+              "project-shell"
+            ],
+            "privateRegions": [
+              "admin-settings-content"
+            ],
+            "mutableSlots": [
+              "SLOT: pageTitle=系统设置",
+              "SLOT: activeNavItem=admin-settings"
+            ],
+            "status": "planned",
+            "children": []
+          }
+        ]
+      }
+    },
+    "dispatchPreflightManifest": [
+      {
+        "recorded_at": "2026-08-26T17:35:17.957Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "ComplexPagePacket",
+        "laneContract": {
+          "resolvedLane": "complex_html_page",
+          "packetType": "ComplexPagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "nodeId": "page-index",
+        "htmlSrc": "pages/index.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/index.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/index.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --node-id=\"page-index\" --html-src=\"pages/index.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\index.html",
+        "brandPrefix": "mc",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\index.html\" --title=\"概览仪表盘\" --lang=\"zh-CN\" --prefix=\"mc\"",
+        "headFillMode": "skeleton-first",
+        "viewportMode": null,
+        "completionSchemaExpected": "full",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "material-cabinet-dashboard.design": "6477c845bd5ee5ab7557c58163462024038a395d6beb55cbadc5fff9aac9e78c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md",
+            "visual-experience/visual-checkpoint-protocol.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": false,
+          "appliesToThisPage": false,
+          "canonicalHtmlIncluded": false,
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-26T17:35:17.957Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "ComplexPagePacket",
+        "laneContract": {
+          "resolvedLane": "complex_html_page",
+          "packetType": "ComplexPagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "nodeId": "page-cabinet",
+        "htmlSrc": "pages/cabinet.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/cabinet.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/cabinet.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --node-id=\"page-cabinet\" --html-src=\"pages/cabinet.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\cabinet.html",
+        "brandPrefix": "mc",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\cabinet.html\" --title=\"收纳柜格位\" --lang=\"zh-CN\" --prefix=\"mc\"",
+        "headFillMode": "skeleton-first",
+        "viewportMode": null,
+        "completionSchemaExpected": "full",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "material-cabinet-dashboard.design": "6477c845bd5ee5ab7557c58163462024038a395d6beb55cbadc5fff9aac9e78c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md",
+            "visual-experience/visual-checkpoint-protocol.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": false,
+          "appliesToThisPage": false,
+          "canonicalHtmlIncluded": false,
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-26T17:35:17.957Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "ComplexPagePacket",
+        "laneContract": {
+          "resolvedLane": "complex_html_page",
+          "packetType": "ComplexPagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "nodeId": "page-materials",
+        "htmlSrc": "pages/materials.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/materials.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/materials.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --node-id=\"page-materials\" --html-src=\"pages/materials.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\materials.html",
+        "brandPrefix": "mc",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\materials.html\" --title=\"物料主数据\" --lang=\"zh-CN\" --prefix=\"mc\"",
+        "headFillMode": "skeleton-first",
+        "viewportMode": null,
+        "completionSchemaExpected": "full",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "material-cabinet-dashboard.design": "6477c845bd5ee5ab7557c58163462024038a395d6beb55cbadc5fff9aac9e78c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md",
+            "visual-experience/visual-checkpoint-protocol.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": false,
+          "appliesToThisPage": false,
+          "canonicalHtmlIncluded": false,
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-26T17:35:17.957Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "ComplexPagePacket",
+        "laneContract": {
+          "resolvedLane": "complex_html_page",
+          "packetType": "ComplexPagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "nodeId": "page-bom",
+        "htmlSrc": "pages/bom.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/bom.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/bom.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --node-id=\"page-bom\" --html-src=\"pages/bom.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\bom.html",
+        "brandPrefix": "mc",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\bom.html\" --title=\"BOM 导入与领料\" --lang=\"zh-CN\" --prefix=\"mc\"",
+        "headFillMode": "skeleton-first",
+        "viewportMode": null,
+        "completionSchemaExpected": "full",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "material-cabinet-dashboard.design": "6477c845bd5ee5ab7557c58163462024038a395d6beb55cbadc5fff9aac9e78c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md",
+            "visual-experience/visual-checkpoint-protocol.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": false,
+          "appliesToThisPage": false,
+          "canonicalHtmlIncluded": false,
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-26T17:35:17.957Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "ComplexPagePacket",
+        "laneContract": {
+          "resolvedLane": "complex_html_page",
+          "packetType": "ComplexPagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "nodeId": "page-analytics",
+        "htmlSrc": "pages/analytics.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/analytics.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/analytics.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --node-id=\"page-analytics\" --html-src=\"pages/analytics.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\analytics.html",
+        "brandPrefix": "mc",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\analytics.html\" --title=\"统计与日志\" --lang=\"zh-CN\" --prefix=\"mc\" --charts",
+        "headFillMode": "skeleton-first",
+        "viewportMode": null,
+        "completionSchemaExpected": "full",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "material-cabinet-dashboard.design": "6477c845bd5ee5ab7557c58163462024038a395d6beb55cbadc5fff9aac9e78c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md",
+            "visual-experience/visual-checkpoint-protocol.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": false,
+          "appliesToThisPage": false,
+          "canonicalHtmlIncluded": false,
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-27T00:00:00.000Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "ComplexPagePacket",
+        "laneContract": {
+          "resolvedLane": "complex_html_page",
+          "packetType": "ComplexPagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-project-complex-build/complex-page-dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-project-complex-build/complex-page-runtime.md",
+        "nodeId": "page-admin-settings",
+        "htmlSrc": "pages/admin-settings.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/admin-settings.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/admin-settings.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --node-id=\"page-admin-settings\" --html-src=\"pages/admin-settings.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\admin-settings.html",
+        "brandPrefix": "mc",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\colors_and_type.css\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\\pages\\admin-settings.html\" --title=\"系统设置\" --lang=\"zh-CN\" --prefix=\"mc\"",
+        "headFillMode": "skeleton-first",
+        "viewportMode": null,
+        "completionSchemaExpected": "full",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "material-cabinet-dashboard.design": "6477c845bd5ee5ab7557c58163462024038a395d6beb55cbadc5fff9aac9e78c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md",
+            "visual-experience/visual-checkpoint-protocol.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": false,
+          "appliesToThisPage": false,
+          "canonicalHtmlIncluded": false,
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      }
+    ],
+    "expectedDispatches": [
+      {
+        "nodeId": "page-index",
+        "packetType": "ComplexPagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/index.html"
+        ],
+        "toolDisciplineEvidence": {
+          "todoWriteUsed": false,
+          "previewStarted": false,
+          "validationScriptsRunBySubAgent": false,
+          "helperScriptsCreated": false,
+          "imagesGeneratedBySubAgent": false,
+          "wroteOnlyAllowedPaths": true
+        },
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "0bfdd3914e3758a7181a1a44d5fa23fbccd04bde3091951a75db5eb97ac3fc16",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      },
+      {
+        "nodeId": "page-cabinet",
+        "packetType": "ComplexPagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/cabinet.html"
+        ],
+        "toolDisciplineEvidence": {
+          "todoWriteUsed": false,
+          "previewStarted": false,
+          "validationScriptsRunBySubAgent": false,
+          "helperScriptsCreated": false,
+          "imagesGeneratedBySubAgent": false,
+          "wroteOnlyAllowedPaths": true
+        },
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "0bfdd3914e3758a7181a1a44d5fa23fbccd04bde3091951a75db5eb97ac3fc16",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      },
+      {
+        "nodeId": "page-materials",
+        "packetType": "ComplexPagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/materials.html"
+        ],
+        "toolDisciplineEvidence": {
+          "todoWriteUsed": false,
+          "previewStarted": false,
+          "validationScriptsRunBySubAgent": false,
+          "helperScriptsCreated": false,
+          "imagesGeneratedBySubAgent": false,
+          "wroteOnlyAllowedPaths": true
+        },
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "0bfdd3914e3758a7181a1a44d5fa23fbccd04bde3091951a75db5eb97ac3fc16",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      },
+      {
+        "nodeId": "page-bom",
+        "packetType": "ComplexPagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/bom.html"
+        ],
+        "toolDisciplineEvidence": {
+          "todoWriteUsed": false,
+          "previewStarted": false,
+          "validationScriptsRunBySubAgent": false,
+          "helperScriptsCreated": false,
+          "imagesGeneratedBySubAgent": false,
+          "wroteOnlyAllowedPaths": true
+        },
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "0bfdd3914e3758a7181a1a44d5fa23fbccd04bde3091951a75db5eb97ac3fc16",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      },
+      {
+        "nodeId": "page-analytics",
+        "packetType": "ComplexPagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/analytics.html"
+        ],
+        "toolDisciplineEvidence": {
+          "todoWriteUsed": false,
+          "previewStarted": false,
+          "validationScriptsRunBySubAgent": false,
+          "helperScriptsCreated": false,
+          "imagesGeneratedBySubAgent": false,
+          "wroteOnlyAllowedPaths": true
+        },
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "0bfdd3914e3758a7181a1a44d5fa23fbccd04bde3091951a75db5eb97ac3fc16",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      },
+      {
+        "nodeId": "page-admin-settings",
+        "packetType": "ComplexPagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/admin-settings.html"
+        ],
+        "toolDisciplineEvidence": {
+          "todoWriteUsed": false,
+          "previewStarted": false,
+          "validationScriptsRunBySubAgent": false,
+          "helperScriptsCreated": false,
+          "imagesGeneratedBySubAgent": false,
+          "wroteOnlyAllowedPaths": true
+        },
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "0bfdd3914e3758a7181a1a44d5fa23fbccd04bde3091951a75db5eb97ac3fc16",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      }
+    ],
+    "mainAgentPostDispatchMutations": [
+      {
+        "path": "material-cabinet-dashboard.design",
+        "owner": "main-agent",
+        "reason": "registered page interactions after Sub-Agent page generation"
+      }
+    ],
+    "validationRunDiscipline": {
+      "maxFullValidationRuns": 2,
+      "softWarningsTriggerRepair": false,
+      "blockingRepairMode": "targeted-once",
+      "forbiddenRepairTriggers": [
+        "soft-warning-only",
+        "provenance-warning-only",
+        "style-warning-only"
+      ]
+    },
+    "lowValueCallWatchdog": {
+      "applies": true,
+      "noProgressNextAction": "return to runtime summary review or block with explicit missing evidence"
+    },
+    "validationHistory": [],
+    "validationRepairLedger": [],
+    "artifactReadinessEvidence": {
+      "wiringRegistrationEvidence": {
+        "expectedDomIds": [
+          "nav-index",
+          "nav-cabinet",
+          "nav-materials",
+          "nav-bom",
+          "nav-analytics",
+          "btn-add-material",
+          "btn-import-bom",
+          "cta-cabinet",
+          "cta-materials",
+          "link-low-stock",
+          "link-materials",
+          "btn-add-to-bom",
+          "link-cabinet",
+          "btn-confirm-pick",
+          "btn-export-logs",
+          "btn-refresh-dashboard",
+          "btn-export-report",
+          "filter-cabinet-status",
+          "btn-batch-pick",
+          "btn-add-material-page",
+          "btn-import-lcsc",
+          "filter-material-search",
+          "btn-upload-bom",
+          "btn-clear-bom",
+          "btn-match-inventory",
+          "filter-time-range",
+          "nav-admin",
+          "admin-nav-settings",
+          "admin-nav-materials",
+          "admin-nav-bom",
+          "admin-nav-analytics",
+          "admin-tab-connection",
+          "admin-tab-data",
+          "admin-tab-capabilities",
+          "admin-save-settings",
+          "admin-test-connection",
+          "admin-secret-toggle",
+          "admin-clear-demo",
+          "admin-clear-all",
+          "admin-capability-export",
+          "admin-capability-logs",
+          "admin-capability-materials",
+          "admin-capability-bom",
+          "link-admin-settings"
+        ],
+        "allExpectedDomIdsRegistered": true,
+        "missingDomIds": []
+      }
+    }
+  },
+  "designSource": {
+    "operatingMode": "library-bound",
+    "libraryIdentity": {
+      "name": "Vercel",
+      "id": "dl_builtin_vercel",
+      "version": "",
+      "scope": "builtin",
+      "path": "c:\\Users\\Lcz\\.trae-cn\\design_libraries\\dl_builtin_vercel",
+      "versionSource": "metadata"
+    },
+    "cssFilePath": "colors_and_type.css",
+    "brandPrefix": "mc",
+    "styleConstraints": {
+      "radiusMax": 8,
+      "staticShadowAlphaMax": 0,
+      "singlePrimaryHue": true,
+      "noSecondaryAccent": true,
+      "defaultTypography": "Inter + PingFang SC sans-serif"
+    }
+  },
+  "pages": [
+    {
+      "nodeId": "page-index",
+      "htmlSrc": "pages/index.html",
+      "brandPrefix": "mc",
+      "title": "概览仪表盘",
+      "pageIndex": 1,
+      "pageType": "information-dense",
+      "visualNorthStar": "At-a-glance command center: KPI stats, cabinet mini-map, low-stock alerts, and recent logs in a Vercel light UI",
+      "compositionPattern": "dashboard-grid",
+      "continuityAnchors": [
+        "Vercel light surface palette",
+        "Left sidebar navigation",
+        "Border-led cards with max 8px radius",
+        "Inter + PingFang SC typography"
+      ],
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "qualityRisks": [
+        "density",
+        "table"
+      ]
+    },
+    {
+      "nodeId": "page-cabinet",
+      "htmlSrc": "pages/cabinet.html",
+      "brandPrefix": "mc",
+      "title": "收纳柜格位",
+      "pageIndex": 2,
+      "pageType": "information-dense",
+      "visualNorthStar": "Visual 8x5x2 cabinet grid as the dominant centerpiece, with slot cards showing material occupancy, quantity, and status",
+      "compositionPattern": "visual-browser",
+      "continuityAnchors": [
+        "Vercel light surface palette",
+        "Left sidebar navigation",
+        "Border-led cards with max 8px radius",
+        "Inter + PingFang SC typography"
+      ],
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "qualityRisks": [
+        "density",
+        "grid-overflow"
+      ]
+    },
+    {
+      "nodeId": "page-materials",
+      "htmlSrc": "pages/materials.html",
+      "brandPrefix": "mc",
+      "title": "物料主数据",
+      "pageIndex": 3,
+      "pageType": "information-dense",
+      "visualNorthStar": "Searchable master-data table with filters, category tags, LCSC integration hints, and replacement relationships",
+      "compositionPattern": "data-table",
+      "continuityAnchors": [
+        "Vercel light surface palette",
+        "Left sidebar navigation",
+        "Border-led cards with max 8px radius",
+        "Inter + PingFang SC typography"
+      ],
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "qualityRisks": [
+        "density",
+        "table"
+      ]
+    },
+    {
+      "nodeId": "page-bom",
+      "htmlSrc": "pages/bom.html",
+      "brandPrefix": "mc",
+      "title": "BOM 导入与领料",
+      "pageIndex": 4,
+      "pageType": "task-driven",
+      "visualNorthStar": "Step-oriented BOM workspace: upload, parse, match against inventory, review suggestions, confirm pick/replenish",
+      "compositionPattern": "task-workspace",
+      "continuityAnchors": [
+        "Vercel light surface palette",
+        "Left sidebar navigation",
+        "Border-led cards with max 8px radius",
+        "Inter + PingFang SC typography"
+      ],
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "qualityRisks": [
+        "density",
+        "workflow-clarity"
+      ]
+    },
+    {
+      "nodeId": "page-analytics",
+      "htmlSrc": "pages/analytics.html",
+      "brandPrefix": "mc",
+      "title": "统计与日志",
+      "pageIndex": 5,
+      "pageType": "information-dense",
+      "visualNorthStar": "Inventory analytics: category distribution, low-stock list, utilization rate, and recent operation logs",
+      "compositionPattern": "dashboard-grid",
+      "continuityAnchors": [
+        "Vercel light surface palette",
+        "Left sidebar navigation",
+        "Border-led cards with max 8px radius",
+        "Inter + PingFang SC typography"
+      ],
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": true,
+      "qualityRisks": [
+        "density",
+        "chart"
+      ]
+    },
+    {
+      "nodeId": "page-admin-settings",
+      "htmlSrc": "pages/admin-settings.html",
+      "brandPrefix": "mc",
+      "title": "系统设置",
+      "pageIndex": 7,
+      "pageType": "configuration",
+      "visualNorthStar": "Admin configuration workspace: connection API keys, business toggles, and capability/data-management actions grounded in existing code config",
+      "compositionPattern": "settings-tabs",
+      "continuityAnchors": [
+        "Vercel light surface palette",
+        "Max 8px radius controls",
+        "Blue focus/state accents",
+        "Inter + PingFang SC typography"
+      ],
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "qualityRisks": [
+        "configuration-clarity"
+      ]
+    }
+  ]
+}

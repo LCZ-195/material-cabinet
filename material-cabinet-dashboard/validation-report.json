@@ -1,0 +1,123 @@
+{
+  "success": true,
+  "outcome": "passed",
+  "repairable": true,
+  "terminalViolations": [],
+  "terminalBlockingSummary": null,
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.08.06.19.15.08",
+    "version_source": "skill-release-manifest.json",
+    "runtime_skill_dir": null,
+    "recorded_at": null,
+    "expected_version": "2026.08.06.19.15.08",
+    "status": "matched",
+    "read_status": "ok"
+  },
+  "operatingMode": "library-bound",
+  "renderBlockingErrorCount": 0,
+  "softWarningCount": 12,
+  "renderBlockingErrors": [],
+  "errorSignatures": [],
+  "softWarnings": [
+    "[library-bound-css] admin-settings.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] analytics.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] analytics.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.text-success, .text-warning, .text-error). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] bom.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .page-content, .footer-actions). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] bom.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.match-panel, .match-scroll, .app-main, .app-content, .page-content, .no-scrollbar). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] cabinet.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] component-library.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .page-content, .footer-actions). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] component-library.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.btn, .btn-primary, .btn-danger, .field, .panel, .no-scrollbar). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] component-library.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.table-scroll-wrap). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] index.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] materials.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .page-content, .footer-actions). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] materials.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.materials-table-panel, .table-scroll, .app-main, .app-content, .page-content, .no-scrollbar). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead."
+  ],
+  "repairPlanHints": [],
+  "repairActionTable": [],
+  "errorCount": 0,
+  "warningCount": 12,
+  "errors": [],
+  "warnings": [
+    "[library-bound-css] admin-settings.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] analytics.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] analytics.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.text-success, .text-warning, .text-error). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] bom.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .page-content, .footer-actions). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] bom.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.match-panel, .match-scroll, .app-main, .app-content, .page-content, .no-scrollbar). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] cabinet.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] component-library.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .page-content, .footer-actions). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] component-library.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.btn, .btn-primary, .btn-danger, .field, .panel, .no-scrollbar). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] component-library.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.table-scroll-wrap). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] index.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .footer-actions, .footer-action). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] materials.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.app-shell, .app-sidebar, .app-main, .app-header, .app-content, .app-footer, .page-content, .footer-actions). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead.",
+    "[library-bound-css] materials.html: Library-bound mode discourages custom CSS class definitions in <style> blocks (.materials-table-panel, .table-scroll, .app-main, .app-content, .page-content, .no-scrollbar). Prefer Tailwind utilities plus Library brand CSS variables/component JSON instead."
+  ],
+  "validationRunDisciplineStatus": {
+    "declared": true,
+    "restoreMode": false,
+    "maxFullValidationRuns": 2,
+    "validationHistoryCount": 0,
+    "repairLedgerCount": 0,
+    "softWarningsTriggerRepair": false,
+    "terminalState": null,
+    "nextAction": null,
+    "violations": [],
+    "success": true
+  },
+  "terminalState": null,
+  "nextCheck": {
+    "type": "finish-readiness",
+    "command": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --check=all",
+    "fullValidationAllowed": false,
+    "reason": "workspace validation passed; run complete finish readiness before final delivery"
+  },
+  "repairBatch": [],
+  "repairContextPacket": {
+    "schema_version": "1.0",
+    "purpose": "small-context repair packet; read this before full validation-report.json",
+    "success": true,
+    "terminalState": null,
+    "skillProvenance": {
+      "name": "solo-design",
+      "version": "2026.08.06.19.15.08",
+      "version_source": "skill-release-manifest.json",
+      "runtime_skill_dir": null,
+      "recorded_at": null,
+      "expected_version": "2026.08.06.19.15.08",
+      "status": "matched",
+      "read_status": "ok"
+    },
+    "renderBlockingErrorCount": 0,
+    "softWarningCount": 12,
+    "renderBlockingErrors": [],
+    "repairActionTable": [],
+    "nextCheck": {
+      "type": "finish-readiness",
+      "command": "node \"c:\\Users\\Lcz\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs\" \"c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard\" --check=all",
+      "fullValidationAllowed": false,
+      "reason": "workspace validation passed; run complete finish readiness before final delivery"
+    },
+    "forbidden": [
+      "do not read validator source",
+      "do not rerun full validation when nextCheck.fullValidationAllowed=false",
+      "do not start preview/browser unless user explicitly asks",
+      "do not hand-edit repair ledger fields"
+    ]
+  },
+  "projectFileHashes": {
+    "material-cabinet-dashboard.design": "e682431e632b819ad37496c25bed2de812316eeb081fd676db2b90411a60d290",
+    "colors_and_type.css": "86a3b704ded9cbb0230648f1f3f8172ff23b0f9c32cd769b7afba6ba923faab2",
+    "runtime-orchestration-summary.json": "4349d91ca6d70d6e33d144a6d19095e449d18fd7d646ca544591389f75ae0ab4",
+    "pages/admin-settings.html": "b33cb039dc91068d423ba0fa8877d5c7dba64dacc0101ff602948eea281d5fa8",
+    "pages/analytics.html": "ee96a89d9d89b2b4b5fd6486ad0c66e81cf375e7d7a2ae4f5744d46b533e257e",
+    "pages/bom.html": "02724f3c41adad75688ac1cd9dcac615265aa206b239e867659d2c91c6d57ecd",
+    "pages/cabinet.html": "6a10c6160dba54db9db20bd52eaf06a0019e2a402d246189ff7b326539088908",
+    "pages/component-library.html": "49af63ece294dbffe1250ebfffd2497918d5d2e39104bc707013fa3839982bd4",
+    "pages/index.html": "68489989b5efcaa58884ea2b471650a7cea7df9cfc252321ecbc417de198baa3",
+    "pages/materials.html": "3f4d04e4c69104835a02b87c46a04c33d361039cfec0f4cfe83831a85fc3f921"
+  },
+  "designDir": "c:\\Users\\Lcz\\Desktop\\物料查询\\material-cabinet-dashboard",
+  "expectedPages": 7,
+  "requireInteractions": null,
+  "checkedAt": "2026-09-03T02:02:59.800Z"
+}
