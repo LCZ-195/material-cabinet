@@ -166,6 +166,11 @@ class GitHubSyncService:
             return {"ok": False, "error": "找不到当前 EXE，无法执行替换更新"}
         temp_path = current + ".download"
         try:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)  # 清理上次失败残留
+                except OSError:
+                    pass
             _download(data["download_url"], temp_path)
             if os.path.getsize(temp_path) < 1024 * 1024:
                 raise ValueError("下载文件大小异常")
@@ -175,7 +180,7 @@ class GitHubSyncService:
             actual = _sha256_file(temp_path)
             if actual.lower() != expected.lower():
                 raise ValueError("更新文件 SHA-256 校验失败")
-            _schedule_replace(current, temp_path)
+            _schedule_replace(current, temp_path, os.getpid())
             return {"ok": True, "data": {"available": True, "version": data["version"], "restart_required": True}}
         except (OSError, ValueError, urllib.error.URLError) as exc:
             try:
@@ -461,17 +466,60 @@ def _download(url, path):
         shutil.copyfileobj(response, target)
 
 
-def _schedule_replace(current, downloaded):
+def _schedule_replace(current, downloaded, parent_pid=None):
+    """Windows 下运行中的 EXE 无法被覆盖。本函数派生隐藏 PowerShell 替换器：
+    先等待主进程退出，再把旧版改名 .old、新文件就位（保持原路径 = 覆盖即删除旧版），
+    成功后自动重启并清理残留；全程写日志便于排查。
+    """
     script = os.path.join(
         tempfile.gettempdir(),
         "material-cabinet-update-{}.ps1".format(os.getpid()))
     current_q = current.replace("'", "''")
     downloaded_q = downloaded.replace("'", "''")
-    backup_q = (current + ".backup").replace("'", "''")
-    script_body = "$ErrorActionPreference='Stop'; Start-Sleep -Seconds 2; Copy-Item -LiteralPath '{}' -Destination '{}' -Force; try {{ Move-Item -LiteralPath '{}' -Destination '{}.new' -Force; Move-Item -LiteralPath '{}.new' -Destination '{}' -Force; Start-Process -FilePath '{}' }} catch {{ Copy-Item -LiteralPath '{}' -Destination '{}' -Force; throw }} finally {{ Remove-Item -LiteralPath '{}' -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath '{}' -Force -ErrorAction SilentlyContinue }}".format(current_q, backup_q, downloaded_q, current_q, current_q, current_q, current_q, current_q, backup_q, current_q, downloaded_q, backup_q)
-    with open(script, "w", encoding="utf-8") as f:
-        f.write(script_body)
-    subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", script], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    old_q = (current + ".old").replace("'", "''")
+    pid = int(parent_pid or os.getpid())
+    body = """$ErrorActionPreference='Continue'
+$log=Join-Path $env:TEMP 'material-cabinet-update.log'
+function W($m){ try { Add-Content -LiteralPath $log -Value ((Get-Date -Format 'HH:mm:ss')+' '+$m) } catch {} }
+W 'updater start'
+try {
+  $waited=0.0
+  while ((Get-Process -Id @PID@ -ErrorAction SilentlyContinue) -and $waited -lt 60) { Start-Sleep -Milliseconds 500; $waited+=0.5 }
+  W ('parent exited after '+$waited+'s')
+  $cur='@CUR@'
+  $dl='@DL@'
+  $old='@OLD@'
+  $ok=$false
+  for ($i=0; $i -lt 20 -and -not $ok; $i++) {
+    try {
+      if (Test-Path -LiteralPath $old) { Remove-Item -LiteralPath $old -Force -ErrorAction Stop }
+      if (Test-Path -LiteralPath $cur) { Rename-Item -LiteralPath $cur -NewName ([IO.Path]::GetFileName($old)) -Force -ErrorAction Stop }
+      Move-Item -LiteralPath $dl -Destination $cur -Force -ErrorAction Stop
+      $ok=$true
+    } catch { W ('attempt '+$i+' failed: '+$_.Exception.Message); Start-Sleep -Seconds 1 }
+  }
+  if ($ok) {
+    W 'replaced, cleaning old + relaunching'
+    Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
+    Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent)
+  } else {
+    W 'replace FAILED, restoring old'
+    if ((Test-Path -LiteralPath $old) -and -not (Test-Path -LiteralPath $cur)) { Rename-Item -LiteralPath $old -NewName ([IO.Path]::GetFileName($cur)) -Force -ErrorAction SilentlyContinue }
+  }
+} catch { W ('updater fatal: '+$_.Exception.Message) }
+Remove-Item -LiteralPath $dl -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
+W 'updater done'
+"""
+    body = (body.replace("@PID@", str(pid))
+                .replace("@CUR@", current_q)
+                .replace("@DL@", downloaded_q)
+                .replace("@OLD@", old_q))
+    with open(script, "w", encoding="utf-8-sig") as f:
+        f.write(body)
+    subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden",
+                      "-ExecutionPolicy", "Bypass", "-File", script],
+                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
 def _json_value(value):
