@@ -45,7 +45,7 @@ from backend import Backend
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "1.15.7"
+APP_VERSION = "1.15.8"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -2011,7 +2011,26 @@ BRIDGE_JS = r"""
       $('#github-repo').value = settings.repo || 'material-cabinet';
       $('#github-auto-update').checked = settings.auto_update !== false;
       $('#github-auto-inventory').checked = settings.auto_inventory !== false;
+      var tokenState = $('#github-token-state');
+      if (tokenState) tokenState.textContent = settings.token_configured ? 'Token 已配置（DPAPI 本机加密）' : 'Token 未配置';
     });
+    var githubCheckUpdate = $('#github-check-update');
+    if (githubCheckUpdate && !githubCheckUpdate.dataset.bridgeBound) {
+      githubCheckUpdate.dataset.bridgeBound = '1';
+      githubCheckUpdate.addEventListener('click', function () {
+        githubCheckUpdate.disabled = true;
+        api.check_github_version().then(function (res) {
+          var data = res && res.data || {};
+          if (!res || !res.ok) { showToast((res && res.error) || '版本检查失败', 'error'); return; }
+          if (!data.available) { showToast(data.message || '当前已是最新版本', 'success'); return; }
+          showToast('发现新版本 v' + data.version + '，正在校验并更新', 'warning');
+          api.update_github_version().then(function (u) {
+            if (u && u.ok) showToast('更新已准备完成，程序即将重启', 'success');
+            else showToast((u && u.error) || '自动更新失败', 'error');
+          });
+        }).catch(function (err) { showToast('版本检查失败：' + err, 'error'); }).finally(function () { githubCheckUpdate.disabled = false; });
+      });
+    }
     var githubSave = $('#github-save');
     if (githubSave && !githubSave.dataset.bridgeBound) {
       githubSave.dataset.bridgeBound = '1';
@@ -2125,7 +2144,7 @@ BRIDGE_JS = r"""
             else showToast((updateRes && updateRes.error) || '自动更新失败', 'error');
           }).catch(function (err) { showToast('自动更新失败：' + err, 'error'); });
         } else {
-          showToast('发现新版本 v' + data.version + '，请在设置页执行更新', 'warning');
+          showToast('发现新版本 v' + data.version + '，可在设置页「GitHub 同步」中安装更新', 'warning');
           if (getCurrentPage() === 'admin-settings') window.scrollTo(0, 0);
         }
       } else showToast(data.message || '当前已是最新版本', 'success');
@@ -2142,7 +2161,7 @@ BRIDGE_JS = r"""
   function bindSyncActions() {
     ensureSyncActions();
     var version = $('[data-dom-id="btn-check-version"]');
-    if (version && !version.dataset.bridgeBound) { version.dataset.bridgeBound = '1'; version.addEventListener('click', runVersionCheck); }
+    if (version && !version.dataset.bridgeBound) { version.dataset.bridgeBound = '1'; version.addEventListener('click', function () { runVersionCheck(false); }); }
     var inventory = $('[data-dom-id="btn-check-inventory"]');
     if (inventory && !inventory.dataset.bridgeBound) { inventory.dataset.bridgeBound = '1'; inventory.addEventListener('click', runInventoryCheck); }
   }
@@ -2152,7 +2171,7 @@ BRIDGE_JS = r"""
     api.get_github_settings().then(function (res) {
       var settings = res && res.data && res.data.settings || {};
       if (settings.auto_inventory) runInventoryCheck();
-      if (settings.auto_update) runVersionCheck(true);
+      if (settings.auto_update) runVersionCheck(false);
     });
   }
 
