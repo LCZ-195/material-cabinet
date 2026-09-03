@@ -45,7 +45,7 @@ from backend import Backend
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "1.15.9"
+APP_VERSION = "1.15.10"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -2119,17 +2119,6 @@ BRIDGE_JS = r"""
     }
   }
 
-  function ensureSyncActions() {
-    var aside = $('.app-sidebar');
-    if (!aside || $('[data-dom-id="global-sync-actions"]')) return;
-    var box = document.createElement('div');
-    box.setAttribute('data-dom-id', 'global-sync-actions');
-    box.style.cssText = 'padding:12px;border-top:1px solid var(--mc-subtle-border, #e5e7eb);display:grid;gap:8px;';
-    box.innerHTML = '<button type="button" data-dom-id="btn-check-version" class="btn" style="width:100%;justify-content:flex-start"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span>检查版本</span></button>'
-      + '<button type="button" data-dom-id="btn-check-inventory" class="btn" style="width:100%;justify-content:flex-start"><i data-lucide="cloud-sync" class="w-4 h-4"></i><span>检查库存</span></button>';
-    aside.appendChild(box);
-    refreshIcons();
-  }
   function runVersionCheck(autoUpdate) {
     var buttons = $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]');
     buttons.forEach(function (b) { b.disabled = true; });
@@ -2159,7 +2148,6 @@ BRIDGE_JS = r"""
     }).catch(function (err) { showToast('库存同步失败：' + err, 'error'); }).finally(function () { buttons.forEach(function (b) { b.disabled = false; }); });
   }
   function bindSyncActions() {
-    ensureSyncActions();
     $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]').forEach(function (el) {
       if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', function () { runVersionCheck(false); }); }
     });
