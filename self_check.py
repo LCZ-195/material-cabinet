@@ -153,7 +153,7 @@ assert _snapshot_version(empty_snapshot) == _snapshot_version(dict(empty_snapsho
 
 class FakeSync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="1.15.11")
+        super().__init__(app_version="2.15.11")
         self.download_calls = 0
         self.upload_calls = 0
 
