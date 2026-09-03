@@ -153,7 +153,7 @@ assert _snapshot_version(empty_snapshot) == _snapshot_version(dict(empty_snapsho
 
 class FakeSync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.15.11")
+        super().__init__(app_version="2.15.12")
         self.download_calls = 0
         self.upload_calls = 0
 
@@ -180,5 +180,32 @@ assert sync.download_calls == 0 and sync.upload_calls == 0, "库存未变化时�
 result = sync.sync_inventory(prefer_local=True)
 assert result["ok"] and sync.upload_calls == 1 and sync.download_calls == 0, \
     "清空后的优先同步只能上传空库存，不得下载旧库存"
+
+# ---- 9) 只读设备降级：下载成功但未配置 Token 时，应部分成功而非整体失败 ----
+class FakeReadonlySync(GitHubSyncService):
+    def __init__(self):
+        super().__init__(app_version="2.15.12")
+
+    def _snapshot(self):
+        snapshot = dict(empty_snapshot)
+        snapshot["inventory_version"] = "local-diff"
+        return snapshot
+
+    def _read_marker(self, name):
+        return {"ok": True, "found": False, "value": ""}
+
+    def _download_inventory(self):
+        return {"ok": True, "data": {"found": True, "changed": 0}}
+
+    def _upload_inventory(self, snapshot=None, message=""):
+        return {"ok": False, "error": "未配置 GitHub Token，库存不会上传"}
+
+
+ro = FakeReadonlySync()
+ro_result = ro.sync_inventory()
+assert ro_result["ok"], "只读设备下载成功后不应整体失败"
+assert ro_result["data"].get("uploaded") is False, "未配置 Token 时应标记未回传"
+assert "已应用云端库存" in ro_result["data"].get("message", ""), "消息应说明已应用本地"
+assert ro_result.get("warning"), "应携带上传失败原因供前端提示"
 
 print("self_check: 全部通过")

@@ -142,7 +142,7 @@ class GitHubSyncService:
                 return {"ok": True, "data": {"available": False, "version": tag.lstrip("vV"), "message": "当前已是最新版本（标记文件）"}}
         status, payload = self._request(self._api_url(f"repos/{self._settings()['owner']}/{self._settings()['repo']}/releases/latest"), auth=True)
         if status == 404:
-            return {"ok": True, "data": {"available": False, "message": "仓库尚未发布 Release"}}
+            return {"ok": True, "data": {"available": False, "message": "无法读取最新发布：请检查仓库名是否正确、仓库是否为公开可见"}}
         if status != 200:
             return {"ok": False, "error": f"版本检查失败：{payload.get('message', status)}"}
         tag = str(payload.get("tag_name") or "").lstrip("vV")
@@ -357,7 +357,12 @@ class GitHubSyncService:
                 return downloaded
             uploaded = self._upload_inventory(message="同步脱敏库存快照")
             if not uploaded.get("ok"):
-                return {"ok": False, "data": {"download": downloaded.get("data", {}), "upload": uploaded, "message": uploaded.get("error")}, "error": uploaded.get("error")}
+                # 只读场景（未配置 Token/网络失败）：下载已成功应用本地，允许部分成功返回
+                return {"ok": True, "data": {
+                    "download": downloaded.get("data", {}),
+                    "uploaded": False,
+                    "message": "已应用云端库存；本机未配置 Token 或上传失败，未回传本机库存（%s）" % uploaded.get("error"),
+                }, "warning": uploaded.get("error")}
             return {"ok": True, "data": {"download": downloaded.get("data", {}), "upload": uploaded.get("data", {}), "message": "库存同步完成"}}
 
 
