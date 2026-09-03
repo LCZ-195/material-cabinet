@@ -138,6 +138,9 @@ assert Inventory.search_for_bom(supplier_part="C2907002"), \
 hits = Inventory.all(keyword="C2907002")
 assert hits and hits[0]["material_id"] == polluted_id, \
     "库存页关键字搜索应能按供应商编号命中拼接编码物料"
+assert hits[0].get("supplier_code") == "C21190,C2907002", \
+    "库存查询必须带出物料 supplier_code（修复导出供应商列为空）"
+assert Inventory.get(hits[0]["id"]).get("supplier_code"), "单条库存查询同样应带 supplier_code"
 
 # ---- 7) BOM 兜底建档：material_code 取首个备选编号 ----
 m = Material.find_or_create_from_bom({
@@ -153,7 +156,7 @@ assert _snapshot_version(empty_snapshot) == _snapshot_version(dict(empty_snapsho
 
 class FakeSync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.15.12")
+        super().__init__(app_version="2.15.13")
         self.download_calls = 0
         self.upload_calls = 0
 
@@ -184,7 +187,7 @@ assert result["ok"] and sync.upload_calls == 1 and sync.download_calls == 0, \
 # ---- 9) 只读设备降级：下载成功但未配置 Token 时，应部分成功而非整体失败 ----
 class FakeReadonlySync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.15.12")
+        super().__init__(app_version="2.15.13")
 
     def _snapshot(self):
         snapshot = dict(empty_snapshot)
@@ -207,5 +210,42 @@ assert ro_result["ok"], "只读设备下载成功后不应整体失败"
 assert ro_result["data"].get("uploaded") is False, "未配置 Token 时应标记未回传"
 assert "已应用云端库存" in ro_result["data"].get("message", ""), "消息应说明已应用本地"
 assert ro_result.get("warning"), "应携带上传失败原因供前端提示"
+
+# ---- 10) min_stock=0 语义：0 表示「不预警」，None 才回退默认 10 ----
+from backend import Backend as _Backend
+assert _Backend._slot_status(5, 0, True) == "ok", "min_stock=0 且库存 5 不应预警"
+assert _Backend._slot_status(5, None, True) == "low", "min_stock 缺省时应按 10 预警"
+assert _Backend._slot_status(0, 0, False) == "empty", "空仓恒为空状态"
+
+# ---- 11) 云端空快照收敛：空库存快照 = 上游已清空，本地同步清空且不得回传 ----
+class FakeCloudEmpty(GitHubSyncService):
+    def __init__(self):
+        super().__init__(app_version="2.15.13")
+        self.upload_calls = 0
+
+    def _snapshot(self):
+        snapshot = dict(empty_snapshot)
+        snapshot["inventory_version"] = "cloud-empty"
+        return snapshot
+
+    def _read_marker(self, name):
+        return {"ok": True, "found": False, "value": ""}
+
+    def _download_inventory(self):
+        return {"ok": True, "data": {"found": True, "empty": True, "changed": 0}}
+
+    def _upload_inventory(self, snapshot=None, message=""):
+        self.upload_calls += 1
+        return {"ok": True, "data": {"inventory_version": "cloud-empty"}}
+
+
+_tmp_id = Material.create({"material_code": "TMP-CLEAR", "name": "待清数据"})
+Inventory.add_inventory_to_slot(2, _tmp_id, 5)
+ce = FakeCloudEmpty()
+ce_result = ce.sync_inventory()
+assert ce_result["ok"] and ce_result["data"].get("emptied") is True, \
+    "云端空快照应触发本地业务数据同步清空"
+assert ce.upload_calls == 0, "清空收敛后不得再上传旧数据回填云端"
+assert not Inventory.all() and not Material.all(), "本地业务数据应已被同步清空"
 
 print("self_check: 全部通过")

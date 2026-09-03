@@ -284,9 +284,10 @@ class GitHubSyncService:
             snapshot = json.loads(raw.decode("utf-8"))
         except (ValueError, UnicodeError) as exc:
             return {"ok": False, "error": f"云端库存快照损坏：{exc}"}
+        empty = not bool(snapshot.get("materials") or snapshot.get("inventories"))
         result = self.merge_snapshot(snapshot)
         if result.get("ok"):
-            result.setdefault("data", {})["found"] = True
+            result.setdefault("data", {}).update({"found": True, "empty": empty})
         return result
 
     def download_inventory(self):
@@ -355,6 +356,19 @@ class GitHubSyncService:
             downloaded = self._download_inventory()
             if not downloaded.get("ok"):
                 return downloaded
+            if downloaded.get("data", {}).get("empty"):
+                # 云端为空库存快照 = 上游设备已清空业务数据：本地同步清空，
+                # 避免旧数据本地留存并在下次上传时回填复活云端
+                from models.database import purge_demo_data
+                try:
+                    purge_demo_data()
+                except Exception as exc:  # noqa: BLE001
+                    return {"ok": False, "error": f"同步云端空库存失败：{exc}"}
+                return {"ok": True, "data": {
+                    "download": downloaded.get("data", {}),
+                    "emptied": True,
+                    "message": "云端为空库存，本地业务数据已同步清空",
+                }}
             uploaded = self._upload_inventory(message="同步脱敏库存快照")
             if not uploaded.get("ok"):
                 # 只读场景（未配置 Token/网络失败）：下载已成功应用本地，允许部分成功返回

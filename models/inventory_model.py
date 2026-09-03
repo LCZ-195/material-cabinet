@@ -107,7 +107,7 @@ class Inventory:
         sql = """
             SELECT i.*, s.slot_code, s.row, s.col, s.position,
                    m.name as material_name, m.category, m.specification, m.package,
-                   m.material_code, m.lcsc_code, m.brand, m.unit, m.min_stock
+                   m.material_code, m.supplier_code, m.lcsc_code, m.brand, m.unit, m.min_stock
             FROM inventories i
             JOIN slots s ON i.slot_id = s.id
             LEFT JOIN materials m ON i.material_id = m.id
@@ -131,7 +131,7 @@ class Inventory:
             cur.execute("""
                 SELECT i.*, s.slot_code, s.row, s.col, s.position,
                        m.name as material_name, m.category, m.specification, m.package,
-                       m.material_code, m.lcsc_code, m.brand, m.unit, m.min_stock
+                       m.material_code, m.supplier_code, m.lcsc_code, m.brand, m.unit, m.min_stock
                 FROM inventories i
                 JOIN slots s ON i.slot_id = s.id
                 LEFT JOIN materials m ON i.material_id = m.id
@@ -146,8 +146,8 @@ class Inventory:
         with get_cursor() as cur:
             cur.execute("""
                 SELECT i.*, s.slot_code, m.name as material_name, m.category,
-                       m.specification, m.package, m.material_code, m.lcsc_code,
-                       m.brand, m.unit, m.min_stock
+                       m.specification, m.package, m.material_code, m.supplier_code,
+                       m.lcsc_code, m.brand, m.unit, m.min_stock
                 FROM inventories i
                 JOIN slots s ON i.slot_id = s.id
                 LEFT JOIN materials m ON i.material_id = m.id

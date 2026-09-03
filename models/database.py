@@ -8,10 +8,11 @@ from config import DB_PATH, CABINET_ROWS, CABINET_COLS, SLOTS_PER_CELL
 
 
 def get_conn():
-    """获取数据库连接"""
-    conn = sqlite3.connect(DB_PATH)
+    """获取数据库连接（带忙等待超时，容忍并发写同库的短暂锁等待）"""
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
 
 

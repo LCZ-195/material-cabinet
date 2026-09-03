@@ -68,7 +68,7 @@ class Backend:
         self._lcsc = LCSCApi()
         self._matcher = LocalParameterMatcher()
         self._ai = DeepSeekService()
-        self._github = GitHubSyncService("物料收纳柜", "2.15.12")
+        self._github = GitHubSyncService("物料收纳柜", "2.15.13")
 
     # ================================================================
     # 基础辅助
@@ -83,13 +83,15 @@ class Backend:
         return {"ok": False, "error": str(error)}
 
     @staticmethod
-    def _slot_status(quantity, min_stock=10, occupied=False):
-        """根据数量与预警值返回状态：空 / 偏低 / 充足"""
-        if not occupied or int(quantity or 0) <= 0:
+    def _slot_status(quantity, min_stock=None, occupied=False):
+        """根据数量与预警值返回状态：空 / 偏低 / 充足。
+        min_stock 为 None 时回退默认 10；显式 0 表示「不预警」而非按 10 预警。
+        """
+        qty = int(quantity or 0)
+        if not occupied or qty <= 0:
             return "empty"
-        if int(quantity or 0) <= int(min_stock or 10):
-            return "low"
-        return "ok"
+        ms = 10 if min_stock is None else int(min_stock or 0)
+        return "low" if qty <= ms else "ok"
 
     @staticmethod
     def _fmt_time(ts):
@@ -399,17 +401,30 @@ class Backend:
             data = dict(data or {})
             if not data.get("name"):
                 return self._fail("物料名称不能为空")
-            mid = Material.create(data)
+            slot = None
+            qty = 0
             if data.get("inventory") and data.get("slot_code"):
-                qty = int(data.get("inventory") or 0)
+                try:
+                    qty = int(data.get("inventory") or 0)
+                except (TypeError, ValueError):
+                    return self._fail("入库数量无效")
                 if qty > 0:
                     slot = Slot.get_by_code(data["slot_code"])
-                    if slot:
-                        InventoryService.stock_in(
-                            slot["id"], mid, qty,
-                            batch_no=data.get("batch_no"),
-                            note="新建物料入库",
-                        )
+                    if not slot:
+                        return self._fail(f"格位不存在: {data['slot_code']}")
+            try:
+                mid = Material.create(data)
+            except Exception as e:  # noqa: BLE001
+                return self._fail(f"创建物料失败：{e}")
+            if slot:
+                try:
+                    InventoryService.stock_in(
+                        slot["id"], mid, qty,
+                        batch_no=data.get("batch_no"),
+                        note="新建物料入库",
+                    )
+                except Exception as e:  # noqa: BLE001
+                    return self._fail(f"物料已创建，但入库失败：{e}")
             return self._ok(id=mid)
 
     def update_material(self, material_id, data):
@@ -632,30 +647,38 @@ class Backend:
                             record=record, items=items, total=len(items))
 
     def match_bom(self, bom_id, force=False):
-        """对 BOM 全部行做库存比对，返回匹配汇总（行级并行，多行 BOM 显著提速）"""
+        """对 BOM 全部行做库存比对，返回匹配汇总。
+
+        读库在锁内、联网/并行匹配在锁外、落库回锁串行——
+        避免 8 线程联网匹配期间阻塞其它后台操作。
+        """
         import concurrent.futures as _fut
         with self._lock:
             items = BomItem.list_by_bom(bom_id) or []
+            if not items:
+                return self._ok(bom_id=bom_id, items=[], matched=0, total=0)
             need = list(items) if force else [
                 it for it in items
                 if it.get("match_status") not in ("fully", "replaced")
             ]
             pre_matched = 0 if force else len(items) - len(need)
 
-            def _work(it):
-                try:
-                    status, inv_id, _cands = BomMatcher.match_bom_item(it)
-                    return (it["id"], status, inv_id)
-                except Exception:  # noqa: BLE001
-                    logger.exception("BOM 第 %s 行匹配异常", it.get("line_no"))
-                    return (it["id"], "unmatched", None)
+        def _work(it):
+            try:
+                status, inv_id, _cands = BomMatcher.match_bom_item(it)
+                return (it["id"], status, inv_id)
+            except Exception:  # noqa: BLE001
+                logger.exception("BOM 第 %s 行匹配异常", it.get("line_no"))
+                return (it["id"], "unmatched", None)
 
-            results = {}
-            if need:
-                with _fut.ThreadPoolExecutor(max_workers=8) as ex:
-                    for rid, status, inv_id in ex.map(_work, need):
-                        results[rid] = (status, inv_id)
-            # 主线程串行落库（避免并发写锁冲突）
+        # 锁外并行匹配（worker 内沉淀元件库写入自带 try/except 容错）
+        results = {}
+        if need:
+            with _fut.ThreadPoolExecutor(max_workers=8) as ex:
+                for rid, status, inv_id in ex.map(_work, need):
+                    results[rid] = (status, inv_id)
+        # 主线程串行落库（重新取锁，避免并发写冲突）
+        with self._lock:
             matched = pre_matched
             for it in need:
                 rid = it["id"]
@@ -676,17 +699,32 @@ class Backend:
     def confirm_pick(self, item_id, picked_qty):
         with self._lock:
             try:
-                # 领料：扣除对应库存
+                # 领料：扣除对应库存（按「剩余需求」与「库存现量」双重限幅，防重复超扣/虚领）
                 it = BomItem.get(item_id)
                 if not it:
                     return self._fail("BOM 明细不存在")
+                req = int(it.get("required_qty") or 0)
+                already = int(it.get("picked_qty") or 0)
+                remaining = max(req - already, 0)
+                if remaining <= 0:
+                    return self._fail("该行需求已领完，请勿重复领料")
+                qty = min(int(picked_qty or 0), remaining)
+                if qty <= 0:
+                    return self._fail("领料数量无效")
                 match_status = it.get("match_status") or "unmatched"
-                if match_status in ("fully", "partial") and it.get("matched_inventory_id"):
-                    InventoryService.stock_out(it["matched_inventory_id"],
-                                               int(picked_qty),
+                inv_id = it.get("matched_inventory_id")
+                if match_status in ("fully", "partial") and inv_id:
+                    cur_qty = int((Inventory.get(inv_id) or {}).get("quantity") or 0)
+                    deduct = min(qty, cur_qty)
+                    if deduct <= 0:
+                        return self._fail("对应库存已为 0，无法领料，请先补货或调整匹配")
+                    InventoryService.stock_out(inv_id, deduct,
                                                note=f"BOM#{it.get('bom_id')} 领料")
-                BomItem.confirm_pick(int(item_id), int(picked_qty))
-                return self._ok(id=item_id)
+                    qty = deduct
+                else:
+                    return self._fail("该行尚未匹配到可领库存，不能确认领料")
+                BomItem.confirm_pick(int(item_id), qty)
+                return self._ok(id=item_id, picked=qty)
             except Exception as e:  # noqa: BLE001
                 return self._fail(str(e))
 
@@ -947,10 +985,11 @@ class Backend:
             result.setdefault("data", {})["local_cleared"] = True
             return result
         result["local_cleared"] = True
-        result.setdefault("data", {})["local_cleared"] = True
-        result.setdefault("data", {})["cloud_sync_failed"] = True
-        result.setdefault("data", {})["message"] = "本地数据已清空，但空库存上传失败，请稍后重试"
-        return {"ok": True, "data": result["data"], "error": result.get("error", "空库存上传失败")}
+        data = dict(result.get("data") or {})
+        data["local_cleared"] = True
+        data["cloud_sync_failed"] = True
+        data["message"] = "本地数据已清空，但空库存上传失败，请稍后重试"
+        return {"ok": True, "data": data}
 
     def clear_demo(self):
         return self._clear_and_sync_empty(purge_demo_data)
