@@ -68,7 +68,7 @@ class Backend:
         self._lcsc = LCSCApi()
         self._matcher = LocalParameterMatcher()
         self._ai = DeepSeekService()
-        self._github = GitHubSyncService("物料收纳柜", "1.15.10")
+        self._github = GitHubSyncService("物料收纳柜", "1.15.11")
 
     # ================================================================
     # 基础辅助
@@ -928,22 +928,35 @@ class Backend:
         return self._github.schedule_update()
 
     def check_github_inventory(self):
-        with self._lock:
-            return self._github.download_inventory()
+        return self._github.download_inventory()
 
     def sync_github_inventory(self):
+        prefer_local = bool(AppSettings.get("inventory_clear_pending", False))
+        result = self._github.sync_inventory(prefer_local=prefer_local)
+        if result.get("ok") and prefer_local:
+            AppSettings.set("inventory_clear_pending", False)
+        return result
+
+    def _clear_and_sync_empty(self, clear_func):
         with self._lock:
-            return self._github.sync_inventory()
+            clear_func()
+            AppSettings.set("inventory_clear_pending", True)
+        result = self._github.sync_inventory(prefer_local=True)
+        if result.get("ok"):
+            AppSettings.set("inventory_clear_pending", False)
+            result.setdefault("data", {})["local_cleared"] = True
+            return result
+        result["local_cleared"] = True
+        result.setdefault("data", {})["local_cleared"] = True
+        result.setdefault("data", {})["cloud_sync_failed"] = True
+        result.setdefault("data", {})["message"] = "本地数据已清空，但空库存上传失败，请稍后重试"
+        return {"ok": True, "data": result["data"], "error": result.get("error", "空库存上传失败")}
 
     def clear_demo(self):
-        with self._lock:
-            purge_demo_data()
-            return self._ok()
+        return self._clear_and_sync_empty(purge_demo_data)
 
     def factory_reset(self):
-        with self._lock:
-            factory_reset()
-            return self._ok()
+        return self._clear_and_sync_empty(factory_reset)
 
     # ================================================================
     # 立创商城
@@ -984,17 +997,20 @@ class Backend:
         """使用 DeepSeek AI 对 BOM 进行智能匹配"""
         with self._lock:
             items = BomItem.list_by_bom(int(bom_id)) or []
-            if not items:
-                return self._fail("BOM 无明细")
             mats = Material.all() or []
-            if not mats:
-                return self._fail("本地无物料数据，请先录入物料")
-            enriched_mats = [self._enrich_material(dict(m)) for m in mats]
-            result = self._ai.match_bom_items(items, enriched_mats)
-            if result.get("offline"):
-                # AI 不可用，回退到本地匹配
-                return self._fail("AI 服务不可用，请使用本地匹配")
-            # 更新匹配状态
+        if not items:
+            return self._fail("BOM 无明细")
+        if not mats:
+            return self._fail("本地无物料数据，请先录入物料")
+        enriched_mats = [self._enrich_material(dict(m)) for m in mats]
+        ai = self._ai
+        # AI 网络调用不占用全局锁
+        result = ai.match_bom_items(items, enriched_mats)
+        if result.get("offline"):
+            # AI 不可用，回退到本地匹配
+            return self._fail("AI 服务不可用，请使用本地匹配")
+        # 更新匹配状态
+        with self._lock:
             for r in result.get("results", []):
                 idx = r.get("bom_index")
                 mat_id = r.get("matched_material_id")
@@ -1017,7 +1033,7 @@ class Backend:
                     else:
                         BomItem.update_match(item["id"], None, "unmatched")
             items = BomItem.list_by_bom(int(bom_id)) or []
-            return self._ok(items=items, offline=result.get("offline", False))
+        return self._ok(items=items, offline=result.get("offline", False))
 
     # ================================================================
     # 操作日志

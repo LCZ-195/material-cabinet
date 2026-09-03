@@ -23,6 +23,7 @@ from models.component_lib_model import ComponentLib
 from models.inventory_model import Inventory
 from models.material_model import Material
 from services.bom_service import BomImporter
+from services.github_sync_service import GitHubSyncService, _snapshot_version
 
 database.DB_PATH = os.path.join(tempfile.mkdtemp(prefix="selfcheck-"), "check.db")
 database.init_database()
@@ -144,5 +145,40 @@ m = Material.find_or_create_from_bom({
     "material_name": "自检电感", "specification": "10uH", "package": "0805"})
 assert m and m["material_code"] == "C9001", \
     "建档编码应取首个编号而非逗号拼接"
+
+# ---- 8) 云端库存标记与清空优先上传 ----
+empty_snapshot = {"schema": 1, "materials": [], "inventories": []}
+assert _snapshot_version(empty_snapshot) == _snapshot_version(dict(empty_snapshot)), \
+    "空库存快照哈希必须稳定"
+
+class FakeSync(GitHubSyncService):
+    def __init__(self):
+        super().__init__(app_version="1.15.11")
+        self.download_calls = 0
+        self.upload_calls = 0
+
+    def _snapshot(self):
+        snapshot = dict(empty_snapshot)
+        snapshot["inventory_version"] = _snapshot_version(snapshot)
+        return snapshot
+
+    def _read_marker(self, name):
+        return {"ok": True, "found": True, "value": self._snapshot()["inventory_version"]}
+
+    def _download_inventory(self):
+        self.download_calls += 1
+        return {"ok": True, "data": {"found": True}}
+
+    def _upload_inventory(self, snapshot=None, message=""):
+        self.upload_calls += 1
+        return {"ok": True, "data": {"inventory_version": self._snapshot()["inventory_version"]}}
+
+sync = FakeSync()
+result = sync.sync_inventory()
+assert result["ok"] and result["data"].get("skipped"), "库存标记一致时应跳过完整下载"
+assert sync.download_calls == 0 and sync.upload_calls == 0, "库存未变化时不应下载或上传"
+result = sync.sync_inventory(prefer_local=True)
+assert result["ok"] and sync.upload_calls == 1 and sync.download_calls == 0, \
+    "清空后的优先同步只能上传空库存，不得下载旧库存"
 
 print("self_check: 全部通过")

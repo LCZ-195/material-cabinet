@@ -45,7 +45,7 @@ from backend import Backend
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "1.15.10"
+APP_VERSION = "1.15.11"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -471,6 +471,10 @@ svg { flex-shrink: 0; vertical-align: middle; }
 [data-lucide], .lucide { display: inline-flex; flex-shrink: 0; vertical-align: middle; }
 /* select 内置箭头清除（自定义样式时） */
 select { appearance: none; -webkit-appearance: none; }
+.mc-action-busy { cursor: wait !important; opacity: .8; }
+.mc-action-busy [data-lucide] { animation: mc-spin .8s linear infinite; }
+@keyframes mc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mc-action-busy [data-lucide] { animation: none; } }
 /* ── BOM 拖拽上传高亮 ── */
 .drag-active {
     border-color: var(--mc-primary, #06b6d4) !important;
@@ -552,6 +556,38 @@ BRIDGE_JS = r"""
     document.body.appendChild(t);
     setTimeout(function () { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 300); }, 2500);
   }
+  function setActionBusy(buttons, busy, label) {
+    buttons.filter(Boolean).forEach(function (button) {
+      if (busy) {
+        if (!button.dataset.actionHtml) button.dataset.actionHtml = button.innerHTML;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.classList.add('mc-action-busy');
+        var icon = button.querySelector('[data-lucide]');
+        if (icon) icon.setAttribute('data-lucide', 'loader-circle');
+        var text = button.querySelector('.mc-action-label');
+        if (text) text.textContent = label;
+        else {
+          var labels = button.querySelectorAll('.mc-action-runtime-label');
+          if (labels.length) labels[0].textContent = label;
+          else {
+            var runtimeLabel = document.createElement('span');
+            runtimeLabel.className = 'mc-action-runtime-label';
+            runtimeLabel.textContent = label;
+            button.appendChild(runtimeLabel);
+          }
+        }
+      } else {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.classList.remove('mc-action-busy');
+        if (button.dataset.actionHtml) button.innerHTML = button.dataset.actionHtml;
+        delete button.dataset.actionHtml;
+      }
+    });
+    refreshIcons();
+  }
+  function actionElapsed(start) { return ((Date.now() - start) / 1000).toFixed(1) + '秒'; }
   function escapeHtml(s) {
     if (s === null || s === undefined) return '';
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2018,17 +2054,20 @@ BRIDGE_JS = r"""
     if (githubCheckUpdate && !githubCheckUpdate.dataset.bridgeBound) {
       githubCheckUpdate.dataset.bridgeBound = '1';
       githubCheckUpdate.addEventListener('click', function () {
-        githubCheckUpdate.disabled = true;
+        var started = Date.now();
+        setActionBusy([githubCheckUpdate], true, '检查中…');
+        showToast('正在检查版本并读取标记文件…', 'info');
         api.check_github_version().then(function (res) {
           var data = res && res.data || {};
-          if (!res || !res.ok) { showToast((res && res.error) || '版本检查失败', 'error'); return; }
-          if (!data.available) { showToast(data.message || '当前已是最新版本', 'success'); return; }
-          showToast('发现新版本 v' + data.version + '，正在校验并更新', 'warning');
-          api.update_github_version().then(function (u) {
-            if (u && u.ok) showToast('更新已准备完成，程序即将重启', 'success');
+          if (!res || !res.ok) { showToast((res && res.error) || '版本检查失败（' + actionElapsed(started) + '）', 'error'); return; }
+          if (!data.available) { showToast((data.message || '当前已是最新版本') + '（已用' + actionElapsed(started) + '）', 'success'); return; }
+          setActionBusy([githubCheckUpdate], true, '更新中…');
+          showToast('发现新版本 v' + data.version + '，正在下载并校验…', 'warning');
+          return api.update_github_version().then(function (u) {
+            if (u && u.ok) showToast('更新校验完成，程序即将重启', 'success');
             else showToast((u && u.error) || '自动更新失败', 'error');
           });
-        }).catch(function (err) { showToast('版本检查失败：' + err, 'error'); }).finally(function () { githubCheckUpdate.disabled = false; });
+        }).catch(function (err) { showToast('版本检查失败：' + err + '（' + actionElapsed(started) + '）', 'error'); }).finally(function () { setActionBusy([githubCheckUpdate], false); });
       });
     }
     var githubSave = $('#github-save');
@@ -2090,14 +2129,19 @@ BRIDGE_JS = r"""
       var newClear = clearDemoBtn.cloneNode(true);
       clearDemoBtn.parentNode.replaceChild(newClear, clearDemoBtn);
       newClear.addEventListener('click', function () {
+        var started = Date.now();
+        setActionBusy([newClear, newClearAll], true, '\u6e05\u7a7a\u4e2d\u2026');
+        showToast('\u6b63\u5728\u6e05\u7a7a\u672c\u5730\u4e1a\u52a1\u6570\u636e\u2026', 'info');
         api.clear_demo().then(function (res) {
           if (res.ok) {
-            showToast('\u6f14\u793a\u6570\u636e\u5df2\u6e05\u9664', 'success');
+            var data = res.data || {};
+            if (data.cloud_sync_failed) showToast(data.message || '\u672c\u5730\u5df2\u6e05\u7a7a\uff0c\u4f46\u7a7a\u5e93\u5b58\u4e0a\u4f20\u5931\u8d25', 'warning');
+            else showToast(data.message || '\u6f14\u793a\u6570\u636e\u5df2\u6e05\u9664\u5e76\u540c\u6b65\u7a7a\u5e93\u5b58', 'success');
             setTimeout(function () { window.location.reload(); }, 1000);
-          } else {
-            showToast('\u6e05\u9664\u5931\u8d25\uff1a' + (res.error || ''), 'error');
-          }
-        });
+          } else showToast('\u6e05\u9664\u5931\u8d25\uff1a' + (res.error || '') + '\uff08' + actionElapsed(started) + '\uff09', 'error');
+        }).catch(function (err) {
+          showToast('\u6e05\u9664\u5931\u8d25\uff1a' + err + '\uff08' + actionElapsed(started) + '\uff09', 'error');
+        }).finally(function () { setActionBusy([newClear, newClearAll], false); });
       });
     }
 
@@ -2107,45 +2151,53 @@ BRIDGE_JS = r"""
       var newClearAll = clearAllBtn.cloneNode(true);
       clearAllBtn.parentNode.replaceChild(newClearAll, clearAllBtn);
       newClearAll.addEventListener('click', function () {
+        var started = Date.now();
+        setActionBusy([newClear, newClearAll], true, '\u6e05\u7a7a\u4e2d\u2026');
+        showToast('\u6b63\u5728\u6e05\u7a7a\u672c\u5730\u4e1a\u52a1\u6570\u636e\u2026', 'info');
         api.factory_reset().then(function (res) {
           if (res.ok) {
-            showToast('\u6570\u636e\u5df2\u6e05\u7a7a', 'success');
+            var data = res.data || {};
+            if (data.cloud_sync_failed) showToast(data.message || '\u672c\u5730\u5df2\u6e05\u7a7a\uff0c\u4f46\u7a7a\u5e93\u5b58\u4e0a\u4f20\u5931\u8d25', 'warning');
+            else showToast(data.message || '\u6570\u636e\u5df2\u6e05\u7a7a\u5e76\u540c\u6b65\u7a7a\u5e93\u5b58', 'success');
             setTimeout(function () { window.location.reload(); }, 1000);
-          } else {
-            showToast('\u6e05\u7a7a\u5931\u8d25\uff1a' + (res.error || ''), 'error');
-          }
-        });
+          } else showToast('\u6e05\u7a7a\u5931\u8d25\uff1a' + (res.error || '') + '\uff08' + actionElapsed(started) + '\uff09', 'error');
+        }).catch(function (err) {
+          showToast('\u6e05\u7a7a\u5931\u8d25\uff1a' + err + '\uff08' + actionElapsed(started) + '\uff09', 'error');
+        }).finally(function () { setActionBusy([newClear, newClearAll], false); });
       });
     }
   }
 
   function runVersionCheck(autoUpdate) {
     var buttons = $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]');
-    buttons.forEach(function (b) { b.disabled = true; });
+    var started = Date.now();
+    setActionBusy(buttons, true, '检查中…');
+    showToast('正在读取云端版本标记…', 'info');
     api.check_github_version().then(function (res) {
       var data = res && res.data || {};
-      if (!res || !res.ok) showToast((res && res.error) || '版本检查失败', 'error');
+      if (!res || !res.ok) showToast((res && res.error) || '版本检查失败（' + actionElapsed(started) + '）', 'error');
       else if (data.available) {
+        showToast('发现新版本 v' + data.version + '（已用' + actionElapsed(started) + '）', 'warning');
         if (autoUpdate) {
-          showToast('发现新版本 v' + data.version + '，正在校验并更新', 'warning');
-          api.update_github_version().then(function (updateRes) {
-            if (updateRes && updateRes.ok) showToast('更新已准备完成，程序即将重启', 'success');
+          setActionBusy(buttons, true, '更新中…');
+          return api.update_github_version().then(function (updateRes) {
+            if (updateRes && updateRes.ok) showToast('更新校验完成，程序即将重启', 'success');
             else showToast((updateRes && updateRes.error) || '自动更新失败', 'error');
-          }).catch(function (err) { showToast('自动更新失败：' + err, 'error'); });
-        } else {
-          showToast('发现新版本 v' + data.version + '，可在设置页「GitHub 同步」中安装更新', 'warning');
-          if (getCurrentPage() === 'admin-settings') window.scrollTo(0, 0);
+          });
         }
-      } else showToast(data.message || '当前已是最新版本', 'success');
-    }).catch(function (err) { showToast('版本检查失败：' + err, 'error'); }).finally(function () { buttons.forEach(function (b) { b.disabled = false; }); });
+        if (getCurrentPage() === 'admin-settings') window.scrollTo(0, 0);
+      } else showToast((data.message || '当前已是最新版本') + '（已用' + actionElapsed(started) + '）', 'success');
+    }).catch(function (err) { showToast('版本检查失败：' + err + '（' + actionElapsed(started) + '）', 'error'); }).finally(function () { setActionBusy(buttons, false); });
   }
   function runInventoryCheck() {
     var buttons = $$('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]');
-    buttons.forEach(function (b) { b.disabled = true; });
+    var started = Date.now();
+    setActionBusy(buttons, true, '同步中…');
+    showToast('正在下载并合并云端库存，然后上传本地快照…', 'info');
     api.sync_github_inventory().then(function (res) {
-      if (res && res.ok) { showToast((res.data && res.data.message) || '库存同步完成', 'success'); setTimeout(function () { window.location.reload(); }, 700); }
-      else showToast((res && res.error) || '库存同步失败', 'error');
-    }).catch(function (err) { showToast('库存同步失败：' + err, 'error'); }).finally(function () { buttons.forEach(function (b) { b.disabled = false; }); });
+      if (res && res.ok) { showToast((res.data && res.data.message) || '库存同步完成（' + actionElapsed(started) + '）', 'success'); setTimeout(function () { window.location.reload(); }, 700); }
+      else showToast((res && (res.error || res.data && res.data.message)) || '库存同步失败（' + actionElapsed(started) + '）', 'error');
+    }).catch(function (err) { showToast('库存同步失败：' + err + '（' + actionElapsed(started) + '）', 'error'); }).finally(function () { setActionBusy(buttons, false); });
   }
   function bindSyncActions() {
     $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]').forEach(function (el) {

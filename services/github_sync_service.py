@@ -20,6 +20,8 @@ from models.database import AppSettings, get_cursor
 DEFAULT_OWNER = "LCZ-195"
 DEFAULT_REPO = "material-cabinet"
 SNAPSHOT_NAME = "inventory_sync.json"
+VERSION_MARKER_NAME = "VERSION.txt"
+INVENTORY_MARKER_NAME = "INVENTORY_VERSION.txt"
 USER_DATA_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or BASE_DIR, "物料收纳柜")
 TOKEN_FILE = os.path.join(USER_DATA_DIR, "github_token.bin")
 
@@ -115,7 +117,29 @@ class GitHubSyncService:
         except (OSError, ValueError) as exc:
             return 0, {"message": str(exc)}
 
+    def _read_marker(self, name):
+        cfg = self._settings()
+        status, payload = self._request(self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{name}"), auth=True)
+        if status == 404:
+            return {"ok": True, "found": False, "value": ""}
+        if status != 200:
+            return {"ok": False, "error": f"读取{name}失败：{payload.get('message', status)}"}
+        try:
+            raw = base64.b64decode(str(payload.get("content") or "").replace("\n", ""))
+            value = raw.decode("utf-8").strip().splitlines()[0] if raw else ""
+        except (ValueError, UnicodeError) as exc:
+            return {"ok": False, "error": f"{name}格式无效：{exc}"}
+        return {"ok": True, "found": bool(value), "value": value, "sha": payload.get("sha")}
+
     def check_version(self):
+        marker = self._read_marker(VERSION_MARKER_NAME)
+        if not marker.get("ok"):
+            return {"ok": False, "error": marker.get("error")}
+        tag = marker.get("value") or ""
+        if tag:
+            available = _version_tuple(tag.lstrip("vV")) > _version_tuple(self.app_version)
+            if not available:
+                return {"ok": True, "data": {"available": False, "version": tag.lstrip("vV"), "message": "当前已是最新版本（标记文件）"}}
         status, payload = self._request(self._api_url(f"repos/{self._settings()['owner']}/{self._settings()['repo']}/releases/latest"), auth=True)
         if status == 404:
             return {"ok": True, "data": {"available": False, "message": "仓库尚未发布 Release"}}
@@ -170,7 +194,9 @@ class GitHubSyncService:
             inventories = [dict(row) for row in cur.fetchall()]
         for item in materials:
             item["parameters"] = _json_value(item.get("parameters"))
-        return {"schema": 1, "updated_at": datetime.now(timezone.utc).isoformat(), "materials": materials, "inventories": inventories}
+        snapshot = {"schema": 1, "updated_at": datetime.now(timezone.utc).isoformat(), "materials": materials, "inventories": inventories}
+        snapshot["inventory_version"] = _snapshot_version(snapshot)
+        return snapshot
 
     def export_local_snapshot(self):
         return {"ok": True, "data": self._snapshot()}
@@ -267,38 +293,72 @@ class GitHubSyncService:
         with self._sync_lock:
             return self._download_inventory()
 
-    def _upload_inventory(self):
+    def _upload_file(self, name, text, message):
         cfg = self._settings()
-        if not self._token():
-            return {"ok": False, "error": "未配置 GitHub Token，库存不会上传"}
-        url = self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{SNAPSHOT_NAME}")
-        snapshot = self._snapshot()
-        content = base64.b64encode(json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8")).decode("ascii")
+        url = self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{name}")
+        content = base64.b64encode(text.encode("utf-8")).decode("ascii")
         for _ in range(2):
             status, current = self._request(url, auth=True)
-            payload = {"message": "同步脱敏库存快照", "content": content}
+            payload = {"message": message, "content": content}
             if status == 200 and current.get("sha"):
                 payload["sha"] = current["sha"]
             result_status, result = self._request(url, method="PUT", data=payload, auth=True)
             if result_status in (200, 201):
-                return {"ok": True, "data": {"uploaded": True, "updated_at": snapshot["updated_at"]}}
+                return {"ok": True}
+            if result_status != 409:
+                return {"ok": False, "error": f"上传{name}失败：{result.get('message', result_status)}"}
+        return {"ok": False, "error": f"上传{name}失败：云端文件发生并发冲突，请稍后重试"}
+
+    def _upload_inventory(self, snapshot=None, message="同步脱敏库存快照"):
+        cfg = self._settings()
+        if not self._token():
+            return {"ok": False, "error": "未配置 GitHub Token，库存不会上传"}
+        url = self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{SNAPSHOT_NAME}")
+        snapshot = snapshot or self._snapshot()
+        content = base64.b64encode(json.dumps(snapshot, ensure_ascii=False, indent=2).encode("utf-8")).decode("ascii")
+        for _ in range(2):
+            status, current = self._request(url, auth=True)
+            payload = {"message": message, "content": content}
+            if status == 200 and current.get("sha"):
+                payload["sha"] = current["sha"]
+            result_status, result = self._request(url, method="PUT", data=payload, auth=True)
+            if result_status in (200, 201):
+                marker = self._upload_file(INVENTORY_MARKER_NAME, snapshot["inventory_version"], "更新库存版本标记")
+                if not marker.get("ok"):
+                    return marker
+                return {"ok": True, "data": {"uploaded": True, "updated_at": snapshot["updated_at"], "inventory_version": snapshot["inventory_version"]}}
             if result_status != 409:
                 return {"ok": False, "error": f"上传库存失败：{result.get('message', result_status)}"}
         return {"ok": False, "error": "上传库存失败：云端文件发生并发冲突，请稍后重试"}
 
-    def upload_inventory(self):
+    def upload_inventory(self, snapshot=None, message="同步脱敏库存快照"):
         with self._sync_lock:
-            return self._upload_inventory()
+            return self._upload_inventory(snapshot, message)
 
-    def sync_inventory(self):
+    def sync_inventory(self, prefer_local=False):
         with self._sync_lock:
+            if prefer_local:
+                uploaded = self._upload_inventory(message="清空后覆盖云端库存")
+                if not uploaded.get("ok"):
+                    return {"ok": False, "data": {"upload": uploaded, "message": uploaded.get("error")}, "error": uploaded.get("error")}
+                return {"ok": True, "data": {"upload": uploaded.get("data", {}), "message": "空库存已上传并覆盖云端"}}
+
+            local_snapshot = self._snapshot()
+            marker = self._read_marker(INVENTORY_MARKER_NAME)
+            if not marker.get("ok"):
+                return marker
+            local_version = local_snapshot.get("inventory_version", "")
+            remote_version = marker.get("value", "")
+            if remote_version and remote_version == local_version:
+                return {"ok": True, "data": {"skipped": True, "inventory_version": local_version, "message": "库存已是最新，无需下载"}}
+
             downloaded = self._download_inventory()
             if not downloaded.get("ok"):
                 return downloaded
-            uploaded = self._upload_inventory()
-        if not uploaded.get("ok"):
-            return {"ok": True, "data": {"download": downloaded.get("data", {}), "upload": uploaded, "message": uploaded.get("error")}}
-        return {"ok": True, "data": {"download": downloaded.get("data", {}), "upload": uploaded.get("data", {}), "message": "库存同步完成"}}
+            uploaded = self._upload_inventory(message="同步脱敏库存快照")
+            if not uploaded.get("ok"):
+                return {"ok": False, "data": {"download": downloaded.get("data", {}), "upload": uploaded, "message": uploaded.get("error")}, "error": uploaded.get("error")}
+            return {"ok": True, "data": {"download": downloaded.get("data", {}), "upload": uploaded.get("data", {}), "message": "库存同步完成"}}
 
 
 def _as_bool(value):
@@ -312,6 +372,12 @@ def _as_bool(value):
 def _version_tuple(value):
     nums = re.findall(r"\d+", str(value or ""))
     return tuple(int(x) for x in nums[:4]) + (0,) * max(0, 4 - len(nums))
+
+
+def _snapshot_version(snapshot):
+    payload = {"schema": snapshot.get("schema"), "materials": snapshot.get("materials", []), "inventories": snapshot.get("inventories", [])}
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()[:16]
 
 
 def _sha256_file(path):
