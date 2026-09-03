@@ -49,7 +49,7 @@ from services.inventory_service import InventoryService, ExportService
 from services.bom_service import BomImporter, BomMatcher
 from services.lcsc_service import LCSCApi, LocalParameterMatcher
 from services.deepseek_service import DeepSeekService
-from services.github_sync_service import GitHubSyncService
+from services.github_sync_service import GitHubSyncService, INVENTORY_MARKER_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class Backend:
         self._lcsc = LCSCApi()
         self._matcher = LocalParameterMatcher()
         self._ai = DeepSeekService()
-        self._github = GitHubSyncService("物料收纳柜", "2.15.14")
+        self._github = GitHubSyncService("物料收纳柜", "2.16.0")
 
     # ================================================================
     # 基础辅助
@@ -974,6 +974,43 @@ class Backend:
         if result.get("ok") and prefer_local:
             AppSettings.set("inventory_clear_pending", False)
         return result
+
+    def probe_github_inventory(self):
+        """只读探测：云端库存标记与本地快照哈希是否不一致（是否有新库存可同步）。
+        不做下载/上传，供启动时快速弹出提示。
+        """
+        marker = self._github._read_marker(INVENTORY_MARKER_NAME)
+        if not marker.get("ok"):
+            return marker
+        remote = marker.get("value") or ""
+        if not remote:
+            return {"ok": True, "data": {"has_new": False, "reason": "no-remote-marker"}}
+        try:
+            local = (self._github._snapshot() or {}).get("inventory_version", "")
+        except Exception:  # noqa: BLE001
+            local = ""
+        return {"ok": True, "data": {"has_new": remote != local,
+                                     "remote": remote, "local": local}}
+
+    def startup_probe(self):
+        """启动快速检查：版本标记 + 库存标记各一次轻量 Raw 请求（只读、不做传输），并行发起。"""
+        import concurrent.futures as _fut
+        with _fut.ThreadPoolExecutor(max_workers=2) as _ex:
+            _fv = _ex.submit(self._github.check_version)
+            _fi = _ex.submit(self.probe_github_inventory)
+            version = _fv.result()
+            inv = _fi.result()
+        vdata = version.get("data", {}) if version.get("ok") else {}
+        idata = inv.get("data", {}) if inv.get("ok") else {}
+        return {"ok": True, "data": {
+            "version": {"ok": version.get("ok", False),
+                        "available": bool(vdata.get("available")),
+                        "version": vdata.get("version", ""),
+                        "message": vdata.get("message", ""),
+                        "error": version.get("error", "")},
+            "inventory": {"ok": inv.get("ok", False),
+                          "has_new": bool(idata.get("has_new")),
+                          "error": inv.get("error", "")}}}
 
     def _clear_and_sync_empty(self, clear_func):
         with self._lock:

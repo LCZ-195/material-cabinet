@@ -45,7 +45,7 @@ from backend import Backend
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "2.15.14"
+APP_VERSION = "2.16.0"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -330,6 +330,9 @@ class Bridge:
     def sync_github_inventory(self):
         return self._b.sync_github_inventory()
 
+    def startup_probe(self):
+        return self._b.startup_probe()
+
     def clear_demo(self):
         return self._b.clear_demo()
 
@@ -555,6 +558,39 @@ BRIDGE_JS = r"""
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(function () { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 300); }, 2500);
+  }
+  function showConfirmBox(title, message, okLabel, onOk) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(10,14,23,.55);';
+    var card = document.createElement('div');
+    card.style.cssText = 'width:min(440px,90vw);background:#1f2430;border:1px solid #334155;border-radius:14px;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.45);color:#e2e8f0;font-size:14px;font-family:inherit;';
+    var t = document.createElement('div');
+    t.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:10px;color:#fff;display:flex;align-items:center;gap:8px;';
+    t.innerHTML = '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;align-items:center;justify-content:center;font-size:13px;">i</span>' + escapeHtml(title);
+    var m = document.createElement('div');
+    m.style.cssText = 'line-height:1.75;color:#cbd5e1;margin:14px 0 20px;word-break:break-word;';
+    m.textContent = message;
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;';
+    function makeBtn(text, primary) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = text;
+      b.style.cssText = 'padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid ' + (primary ? '#2563eb' : '#3f4a5e') + ';background:' + (primary ? '#2563eb' : 'transparent') + ';color:' + (primary ? '#fff' : '#cbd5e1') + ';transition:opacity .15s;';
+      b.onmouseover = function () { b.style.opacity = '.85'; };
+      b.onmouseout = function () { b.style.opacity = '1'; };
+      return b;
+    }
+    var later = makeBtn('稍后再说', false);
+    later.onclick = function () { overlay.remove(); };
+    var ok = makeBtn(okLabel || '确定', true);
+    ok.onclick = function () { overlay.remove(); if (onOk) onOk(); };
+    row.appendChild(later); row.appendChild(ok);
+    card.appendChild(t); card.appendChild(m); card.appendChild(row);
+    overlay.appendChild(card);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    if (ok.focus) setTimeout(function () { ok.focus(); }, 50);
   }
   function setActionBusy(buttons, busy, label) {
     buttons.filter(Boolean).forEach(function (button) {
@@ -2208,12 +2244,43 @@ BRIDGE_JS = r"""
     });
   }
   function autoSyncOnce() {
-    if (sessionStorage.getItem('github_auto_checked')) return;
-    sessionStorage.setItem('github_auto_checked', '1');
+    if (sessionStorage.getItem('mc_probe_done')) return;
+    sessionStorage.setItem('mc_probe_done', '1');
     api.get_github_settings().then(function (res) {
-      var settings = res && res.data && res.data.settings || {};
-      if (settings.auto_inventory) runInventoryCheck();
-      if (settings.auto_update) runVersionCheck(false);
+      var s = (res && res.data && res.data.settings) || {};
+      var autoUpd = s.auto_update !== false;
+      var autoInv = s.auto_inventory !== false;
+      if (!autoUpd && !autoInv) return;
+      api.startup_probe().then(function (r) {
+        if (!r || !r.ok) return; /* 离线 / 网络异常：静默，不打扰 */
+        var v = (r.data && r.data.version) || {};
+        var inv = (r.data && r.data.inventory) || {};
+        var updBtns = $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]');
+        var invBtns = $$('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]');
+        if (autoUpd && v.ok && v.available) {
+          showConfirmBox('发现新版本 v' + (v.version || '?'),
+            '云端已发布新版本，是否立即下载更新？下载完成后将自动重启，程序路径保持不变。',
+            '立即下载更新', function () {
+              setActionBusy(updBtns, true, '更新中…');
+              api.update_github_version().then(function (u) {
+                if (u && u.ok) showToast((u.data && u.data.message) || '更新校验完成，程序即将重启', 'success');
+                else showToast((u && (u.error || (u.data && u.data.message))) || '自动更新失败', 'error');
+              }).catch(function (err) { showToast('自动更新失败：' + err, 'error'); })
+                .finally(function () { setActionBusy(updBtns, false); });
+            });
+        } else if (autoInv && inv.ok && inv.has_new) {
+          showConfirmBox('云端有新库存',
+            '检测到云端库存快照与本地不一致，是否立即同步？',
+            '立即同步', function () {
+              setActionBusy(invBtns, true, '同步中…');
+              api.sync_github_inventory().then(function (u) {
+                if (u && u.ok) { showToast((u.data && u.data.message) || '库存同步完成', 'success'); setTimeout(function () { window.location.reload(); }, 700); }
+                else showToast((u && (u.error || (u.data && u.data.message))) || '库存同步失败', 'error');
+              }).catch(function (err) { showToast('库存同步失败：' + err, 'error'); })
+                .finally(function () { setActionBusy(invBtns, false); });
+            });
+        }
+      });
     });
   }
 

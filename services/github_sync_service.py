@@ -119,6 +119,21 @@ class GitHubSyncService:
 
     def _read_marker(self, name):
         cfg = self._settings()
+        # 优先走 GitHub Raw（单次轻量 GET，公开仓库无需鉴权、比 contents API 快得多），
+        # 失败时回退 contents API（兼容私有仓库 + Token 场景）
+        raw_url = "https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file}".format(
+            owner=cfg["owner"], repo=cfg["repo"], branch="main", file=name)
+        try:
+            request = urllib.request.Request(raw_url, headers={"User-Agent": "material-cabinet"})
+            with urllib.request.urlopen(request, timeout=6) as response:
+                raw = response.read().decode("utf-8", errors="replace")
+            value = raw.strip().splitlines()[0] if raw.strip() else ""
+            return {"ok": True, "found": bool(value), "value": value}
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return {"ok": True, "found": False, "value": ""}
+        except Exception:  # noqa: BLE001 网络错误 → 走 API 回退
+            pass
         status, payload = self._request(self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{name}"), auth=True)
         if status == 404:
             return {"ok": True, "found": False, "value": ""}
@@ -152,9 +167,13 @@ class GitHubSyncService:
             return {"ok": True, "data": {"available": False, "version": tag, "message": "Release 未包含 EXE 文件"}}
         checksum_asset = next((x for x in assets if str(x.get("name", "")).lower() in ("sha256.txt", "checksums.txt", "checksums.sha256")), None)
         available = _version_tuple(tag) > _version_tuple(self.app_version)
-        owner = self._settings()["owner"]
-        repo = self._settings()["repo"]
-        return {"ok": True, "data": {"available": available, "version": tag, "name": asset.get("name"), "download_url": self._api_url(f"repos/{owner}/{repo}/releases/assets/{asset.get('id')}"), "checksum_url": self._api_url(f"repos/{owner}/{repo}/releases/assets/{checksum_asset.get('id')}") if checksum_asset else "", "release_url": payload.get("html_url")}}
+        # 优先使用 release 资产的 CDN 直链（browser_download_url），下载更快更稳；无直链时退回 API 资产接口
+        download_url = (asset.get("browser_download_url") or
+                        self._api_url(f"repos/{self._settings()['owner']}/{self._settings()['repo']}/releases/assets/{asset.get('id')}"))
+        checksum_url = (checksum_asset.get("browser_download_url") or "") if checksum_asset else ""
+        return {"ok": True, "data": {"available": available, "version": tag, "name": asset.get("name"),
+                                     "download_url": download_url, "checksum_url": checksum_url,
+                                     "release_url": payload.get("html_url")}}
 
     def schedule_update(self):
         result = self.check_version()
