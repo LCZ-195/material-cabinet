@@ -40,12 +40,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import webview
 
 # ── 业务层 ────────────────────────────────────────────────
-from backend import Backend
+from backend import Backend, APP_VERSION
+from services.github_sync_service import cleanup_stale_update_files
 
 # ══════════════════════════════════════════════════════════
 #  常量
 # ══════════════════════════════════════════════════════════
-APP_VERSION = "2.16.1"
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
 INSTANCE_PORT = 47831
@@ -2134,6 +2134,18 @@ BRIDGE_JS = r"""
         });
       });
     }
+    var githubClearToken = $('#github-clear-token');
+    if (githubClearToken && !githubClearToken.dataset.bridgeBound) {
+      githubClearToken.dataset.bridgeBound = '1';
+      githubClearToken.addEventListener('click', function () {
+        if (!confirm('确定清除本机保存的 GitHub Token？\\n清除后私有仓库将无法上传库存，可随时重新配置。')) return;
+        // owner/repo 随请求回传：避免后端把它们重置为默认值
+        api.save_github_settings({ owner: $('#github-owner').value, repo: $('#github-repo').value, clear_token: true }).then(function (res) {
+          if (res.ok) { $('#github-token').value = ''; showToast('已清除本机 GitHub Token', 'success'); }
+          else showToast('清除 Token 失败：' + (res.error || ''), 'error');
+        });
+      });
+    }
 
     /* 保存设置：克隆按钮以移除页面原有 demo 监听 */
     var saveBtn = $('[data-dom-id="admin-save-settings"]');
@@ -2251,12 +2263,25 @@ BRIDGE_JS = r"""
     }).catch(function (err) { showToast('库存同步失败：' + err + '（' + actionElapsed(started) + '）', 'error'); }).finally(function () { setActionBusy(buttons, false); });
   }
   function bindSyncActions() {
-    $$('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]').forEach(function (el) {
-      if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', function () { runVersionCheck(true); }); }
-    });
-    $$('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]').forEach(function (el) {
-      if (!el.dataset.bridgeBound) { el.dataset.bridgeBound = '1'; el.addEventListener('click', runInventoryCheck); }
-    });
+    /* 事件委托：document 级监听一次性挂载，页脚/设置页按钮即使被 DOM 重渲染或
+       桥未就绪时点击也不丢失（处理函数在点击时才读取 api） */
+    if (window.__syncActionsDelegated) return;
+    window.__syncActionsDelegated = true;
+    document.addEventListener('click', function (e) {
+      var el = e.target && e.target.closest ? e.target.closest('[data-dom-id="btn-check-version"],[data-dom-id="footer-check-version"]') : null;
+      if (el) {
+        e.preventDefault();
+        if (!api) { showToast('程序初始化中，请稍后再试', 'warning'); return; }
+        runVersionCheck(true);
+        return;
+      }
+      var inv = e.target && e.target.closest ? e.target.closest('[data-dom-id="btn-check-inventory"],[data-dom-id="footer-check-inventory"]') : null;
+      if (inv) {
+        e.preventDefault();
+        if (!api) { showToast('程序初始化中，请稍后再试', 'warning'); return; }
+        runInventoryCheck();
+      }
+    }, true);
   }
   function autoSyncOnce() {
     if (sessionStorage.getItem('mc_probe_done')) return;
@@ -2512,6 +2537,12 @@ def main():
     instance_lock = acquire_instance_lock()
     if instance_lock is None:
         return
+    # 拿到实例锁后再清理更新残留：二次启动实例不得干扰首个实例正在
+    # 进行的更新下载；.old 延迟 60 秒删除以保留更新器 12 秒回滚窗口
+    try:
+        cleanup_stale_update_files()
+    except Exception:  # noqa: BLE001 清理失败不阻断启动
+        pass
     # 启动本地 HTTP 服务器
     server = start_ui_server(0)
     port = server.server_address[1]

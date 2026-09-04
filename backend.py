@@ -53,6 +53,10 @@ from services.github_sync_service import GitHubSyncService, INVENTORY_MARKER_NAM
 
 logger = logging.getLogger(__name__)
 
+# 应用版本号唯一来源：main.py 窗口标题与 GitHubSyncService 的更新比对
+# 均从这里引用，升级版本只改这一处，避免双处硬编码漂移
+APP_VERSION = "2.16.2"
+
 
 class Backend:
     """业务门面：为桌面层提供统一、可 JSON 序列化的调用接口。"""
@@ -68,7 +72,7 @@ class Backend:
         self._lcsc = LCSCApi()
         self._matcher = LocalParameterMatcher()
         self._ai = DeepSeekService()
-        self._github = GitHubSyncService("物料收纳柜", "2.16.1")
+        self._github = GitHubSyncService("物料收纳柜", APP_VERSION)
 
     # ================================================================
     # 基础辅助
@@ -955,9 +959,20 @@ class Backend:
 
     def save_github_settings(self, data):
         data = dict(data or {})
-        return self._github.save_configuration(
-            data.get("owner"), data.get("repo"), data.get("token"),
-            data.get("auto_update", True), data.get("auto_inventory", True))
+        # None（桥序列化 undefined 的结果）表示"该键未提供"：回读现值原样
+        # 写回。绝不能当作 True/False 处理，否则清除 Token 等部分请求会把
+        # 用户已关闭的开关静默重置为开启
+        try:
+            current = AppSettings.all()
+            auto_update = data.get("auto_update")
+            auto_inventory = data.get("auto_inventory")
+            return self._github.save_configuration(
+                data.get("owner"), data.get("repo"), data.get("token"),
+                current.get("github_auto_update", True) if auto_update is None else auto_update,
+                current.get("github_auto_inventory", True) if auto_inventory is None else auto_inventory,
+                clear_token=bool(data.get("clear_token", False)))
+        except Exception as e:  # noqa: BLE001 DPAPI/文件写入失败时给前端明确反馈
+            return {"ok": False, "error": f"GitHub 配置保存失败：{e}"}
 
     def check_github_version(self):
         return self._github.check_version()

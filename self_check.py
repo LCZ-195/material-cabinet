@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """断言式自检（无测试框架）：全部跑在临时库上，不触碰真实 inventory.db。
 
-覆盖五块易回归逻辑：
+覆盖九块易回归逻辑：
 1. 历史库存记忆库：record / 白名单更新 / 参数 JSON 序列化 / 删除返回值
 2. 补货推荐：空库可推荐空仓、同批 exclude_slot_ids 去重、E 行同参与推荐
 3. BOM 导入合并：同供应商编号/同参数去重、表头列独占、多工作表选择
 4. 历史逗号拼接编码：get_by_code / search_for_bom / 库存关键字搜索兼容
 5. BOM 兜底建档：material_code 取首个备选编号
+6. 云端库存同步：版本跳过 / 清空优先上传 / 只读降级 / 空快照收敛
+7. 历史记忆库云端同步：schema 2 快照合并（新者胜）与 schema 1 兼容
+8. 库存双向同步容错：下载失败不阻断上传
+9. 更新器安全：PE 头校验 / 更新残留清理
 
 运行：python self_check.py
 """
@@ -156,7 +160,7 @@ assert _snapshot_version(empty_snapshot) == _snapshot_version(dict(empty_snapsho
 
 class FakeSync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.16.1")
+        super().__init__(app_version="2.16.2")
         self.download_calls = 0
         self.upload_calls = 0
 
@@ -187,7 +191,7 @@ assert result["ok"] and sync.upload_calls == 1 and sync.download_calls == 0, \
 # ---- 9) 只读设备降级：下载成功但未配置 Token 时，应部分成功而非整体失败 ----
 class FakeReadonlySync(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.16.1")
+        super().__init__(app_version="2.16.2")
 
     def _snapshot(self):
         snapshot = dict(empty_snapshot)
@@ -220,7 +224,7 @@ assert _Backend._slot_status(0, 0, False) == "empty", "空仓恒为空状态"
 # ---- 11) 云端空快照收敛：空库存快照 = 上游已清空，本地同步清空且不得回传 ----
 class FakeCloudEmpty(GitHubSyncService):
     def __init__(self):
-        super().__init__(app_version="2.16.1")
+        super().__init__(app_version="2.16.2")
         self.upload_calls = 0
 
     def _snapshot(self):
@@ -247,5 +251,120 @@ assert ce_result["ok"] and ce_result["data"].get("emptied") is True, \
     "云端空快照应触发本地业务数据同步清空"
 assert ce.upload_calls == 0, "清空收敛后不得再上传旧数据回填云端"
 assert not Inventory.all() and not Material.all(), "本地业务数据应已被同步清空"
+
+# ---- 12) 历史记忆库随快照同步：schema 2 导出含 components，合并新者胜 ----
+real = GitHubSyncService()
+mem_id = ComponentLib.record({
+    "lcsc_code": "C1234", "supplier_part": "SP-LOCAL", "model": "LM-LOCAL",
+    "name": "本地记忆", "specification": "10k 1%", "package": "0805",
+    "category": "电阻", "parameters": {"resistance": "10k"},
+}, source="selfcheck")
+assert mem_id, "记忆库记录应写入成功"
+
+real_snap = real._snapshot()
+assert real_snap["schema"] == 2, "快照 schema 应为 2（记忆库已纳入同步）"
+assert any(c.get("lcsc_code") == "C1234" for c in real_snap["components"]), \
+    "快照 components 必须携带历史记忆库数据"
+assert _snapshot_version(real_snap) == _snapshot_version(dict(real_snap, updated_at="x")), \
+    "快照哈希不得受 updated_at 影响"
+
+cloud_snap = {"schema": 2, "materials": [], "inventories": [], "components": [
+    {"lcsc_code": "C777001", "supplier_part": "SP-CLOUD", "model": "LM-CLOUD",
+     "name": "云端新元件", "package": "0402", "category": "电容",
+     "parameters": {"capacitance": "100pF"}, "hit_count": 3,
+     "update_time": "2030-01-01T00:00:00"},
+    {"lcsc_code": "C1234", "supplier_part": "SP-OLD", "model": "LM-OLD",
+     "name": "云端旧记录", "package": "0805", "update_time": "2020-01-01T00:00:00"},
+]}
+assert real.merge_snapshot(cloud_snap).get("ok"), "schema 2 云端快照应可合并"
+
+after = real._snapshot()
+comp_by_lcsc = {c.get("lcsc_code"): c for c in after["components"]}
+assert comp_by_lcsc.get("C777001", {}).get("name") == "云端新元件", "云端新记忆应合并入库"
+assert comp_by_lcsc.get("C777001", {}).get("hit_count") == 3, "hit_count 应随合并保留"
+assert comp_by_lcsc.get("C1234", {}).get("name") == "本地记忆", \
+    "update_time 更旧的云端记录不得覆盖本地新记录"
+assert comp_by_lcsc.get("C1234", {}).get("supplier_part") == "SP-LOCAL", \
+    "被拒合并的记录内容不得变化"
+assert real.merge_snapshot({"schema": 1, "materials": [], "inventories": []}).get("ok"), \
+    "schema 1 旧快照应向后兼容（无记忆库字段视为空集合）"
+
+# ---- 13) 库存双向同步容错：下载失败不得阻断上传 ----
+class FakeDownloadFailSync(GitHubSyncService):
+    def __init__(self):
+        super().__init__(app_version="2.16.2")
+        self.upload_calls = 0
+        self.uploaded_snapshot = None
+
+    def _snapshot(self):
+        snapshot = {"schema": 2, "materials": [], "inventories": [],
+                    "components": [{"lcsc_code": "C-LOCAL-ONLY"}]}
+        snapshot["inventory_version"] = "local-new"
+        return snapshot
+
+    def _read_marker(self, name):
+        return {"ok": True, "found": False, "value": ""}
+
+    def _download_inventory(self):
+        return {"ok": False, "error": "下载库存失败：网络异常"}
+
+    def _upload_inventory(self, snapshot=None, message=""):
+        self.upload_calls += 1
+        self.uploaded_snapshot = snapshot
+        return {"ok": True, "data": {"inventory_version": "local-new"}}
+
+
+df = FakeDownloadFailSync()
+df_result = df.sync_inventory()
+assert df_result["ok"], "下载失败但上传成功时，整体应部分成功"
+assert df_result["data"].get("download_failed") is True, "结果应标记下载失败"
+assert df.upload_calls == 1, "下载失败不得阻断上传（其他设备的修改必须能上传）"
+assert df.uploaded_snapshot and df.uploaded_snapshot.get("components"), \
+    "下载失败时上传的快照必须携带本机记忆库"
+
+
+class FakeBothFailSync(FakeDownloadFailSync):
+    def _upload_inventory(self, snapshot=None, message=""):
+        return {"ok": False, "error": "未配置 GitHub Token"}
+
+
+bf = FakeBothFailSync()
+bf_result = bf.sync_inventory()
+assert not bf_result["ok"], "下载与上传同时失败应整体失败"
+assert "下载" in bf_result.get("error", "") and "上传" in bf_result.get("error", ""), \
+    "错误信息应同时包含下载与上传的失败原因"
+
+# ---- 14) 更新器安全：PE 头校验拒绝损坏/伪造的安装包 ----
+from services.github_sync_service import _validate_pe_file, cleanup_stale_update_files
+
+pe_dir = tempfile.mkdtemp(prefix="selfcheck-pe-")
+pe_path = os.path.join(pe_dir, "app.exe")
+with open(pe_path, "wb") as f:
+    header = bytearray(0x84)
+    header[:2] = b"MZ"
+    header[60:64] = (0x80).to_bytes(4, "little")
+    header[0x80:0x84] = b"PE\x00\x00"
+    f.write(header)
+_validate_pe_file(pe_path)  # 合法 PE：不抛异常即通过
+
+bad_path = pe_path + ".fake"
+with open(bad_path, "w", encoding="utf-8") as f:
+    f.write("服务器返回的错误页文本")
+try:
+    _validate_pe_file(bad_path)
+    raise AssertionError("非 PE 文件必须被拒绝（防止错误页/HTML 被当作安装包替换程序）")
+except ValueError:
+    pass
+
+trunc_path = pe_path + ".trunc"
+with open(pe_path, "rb") as src, open(trunc_path, "wb") as dst:
+    dst.write(src.read(32))
+try:
+    _validate_pe_file(trunc_path)
+    raise AssertionError("截断损坏的文件必须被拒绝")
+except ValueError:
+    pass
+
+cleanup_stale_update_files()  # 非打包环境应直接返回，不得抛异常
 
 print("self_check: 全部通过")

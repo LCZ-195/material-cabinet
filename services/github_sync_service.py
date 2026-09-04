@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -23,6 +24,93 @@ SNAPSHOT_NAME = "inventory_sync.json"
 VERSION_MARKER_NAME = "VERSION.txt"
 INVENTORY_MARKER_NAME = "INVENTORY_VERSION.txt"
 USER_DATA_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or BASE_DIR, "物料收纳柜")
+
+
+def _clone_request(request):
+    """克隆 urllib Request：失败后重发需要全新对象，避免内部状态污染。"""
+    return urllib.request.Request(
+        request.full_url, data=request.data,
+        headers={name: value for name, value in request.header_items()},
+        method=request.get_method())
+
+
+_direct_healthy_until = [0.0]
+
+
+def _norm_cell(value):
+    """快照单元格归一化：dict/list 序列化为 JSON 文本，其余标量原样透传。
+    防御畸形快照把容器类型直接绑定给 sqlite（InterfaceError）。"""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return value
+
+
+def _http_error_transient(exc):
+    """判定 HTTPError 是否属于"可换通道重试"的瞬时故障：
+    429 限流、5xx 服务端故障、407 代理认证失败都可以换另一条通道再试；
+    401/403/404/422 等是明确的服务端业务判定，换通道结果不会变，直接抛出。"""
+    code = exc.code
+    return code == 429 or code == 407 or 500 <= code <= 599
+
+
+class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """跨主机重定向时剥离 Authorization 头。
+    Python 的 redirect_request 会把原请求 headers 复制给重定向请求：
+    Token一旦跟随 302 跳到第三方域（CDN/统计域名）就会泄露。"""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None:
+            old_host = urllib.parse.urlsplit(req.full_url).netloc
+            new_host = urllib.parse.urlsplit(newurl).netloc
+            if old_host != new_host:
+                for name in [h for h in new.headers if h.lower() == "authorization"]:
+                    del new.headers[name]
+        return new
+
+
+# 代理/直连两条固定 opener：均安装 _SafeRedirectHandler；
+# 直连 opener 额外用空 ProxyHandler 覆盖系统代理设置
+_OPENER_PROXY = urllib.request.build_opener(_SafeRedirectHandler())
+_OPENER_DIRECT = urllib.request.build_opener(_SafeRedirectHandler(), urllib.request.ProxyHandler({}))
+
+
+def _urlopen_with_retry(request, timeout):
+    """带故障转移的 urlopen：奇数次走系统代理，偶数次强制直连。
+    大陆网络环境的典型故障模式是代理节点抖动而部分 GitHub 域名直连可达
+    （或相反），交替尝试可显著提高成功率。实测（2026-09）某代理节点完全
+    不可用时 api.github.com 直连仍能返回 200。
+    直连成功后进入 5 分钟健康期：期间优先直连，避免每次都先等代理超时；
+    直连通道自身失败（SSL 超时/连接拒绝等）则立即清除健康缓存。
+    HTTPError 默认视为明确的服务端判定直接抛出；仅 429/5xx/407 这类
+    瞬时故障换另一条通道重试。"""
+    last_exc = None
+    prefer_direct = time.time() < _direct_healthy_until[0]
+    order = [2, 1] if prefer_direct else [1, 2]
+    for step, channel in enumerate(order):
+        opener = _OPENER_DIRECT if channel == 2 else _OPENER_PROXY
+        try:
+            response = opener.open(_clone_request(request), timeout=timeout)
+            if channel == 2:
+                _direct_healthy_until[0] = time.time() + 300
+            return response
+        except urllib.error.HTTPError as exc:
+            if channel == 2:
+                # HTTPError 说明 TLS 握手已完成、服务器有响应——直连通道本身健康
+                _direct_healthy_until[0] = time.time() + 300
+            if not _http_error_transient(exc):
+                raise
+            last_exc = exc
+        except Exception as exc:  # noqa: BLE001 瞬时网络故障 → 换通道重试
+            if channel == 2:
+                # 直连也失败：健康缓存已不可信，立即清空让下次回到代理优先
+                _direct_healthy_until[0] = 0.0
+            last_exc = exc
+        if step < len(order) - 1:
+            time.sleep(1)
+    raise last_exc
+
+
 TOKEN_FILE = os.path.join(USER_DATA_DIR, "github_token.bin")
 
 
@@ -31,6 +119,7 @@ class GitHubSyncService:
         self.app_name = app_name
         self.app_version = app_version
         self._sync_lock = threading.Lock()
+        self._update_lock = threading.Lock()
 
     @staticmethod
     def _settings():
@@ -58,7 +147,7 @@ class GitHubSyncService:
             return ""
 
     @staticmethod
-    def save_configuration(owner, repo, token, auto_update=True, auto_inventory=True):
+    def save_configuration(owner, repo, token, auto_update=True, auto_inventory=True, clear_token=False):
         owner = str(owner or DEFAULT_OWNER).strip()
         repo = str(repo or DEFAULT_REPO).strip()
         if not re.fullmatch(r"[A-Za-z0-9_.-]+", owner) or not re.fullmatch(r"[A-Za-z0-9_.-]+", repo):
@@ -88,8 +177,13 @@ class GitHubSyncService:
                     os.remove(temp_path)
                 except OSError:
                     pass
-        elif token == "":
-            pass
+        elif clear_token:
+            # 显式清除（clear_token=True 才删）：token 输入框留空是常态
+            # （前端保存后即清空输入框），空值绝不能误删已保存的 Token
+            try:
+                os.remove(TOKEN_FILE)
+            except OSError:
+                pass
         return {"ok": True, "data": {"settings": GitHubSyncService._settings()}}
 
     @staticmethod
@@ -97,7 +191,7 @@ class GitHubSyncService:
         encoded = "/".join(urllib.parse.quote(p, safe="") for p in path.strip("/").split("/"))
         return "https://api.github.com/" + encoded
 
-    def _request(self, url, method="GET", data=None, auth=True, timeout=8):
+    def _request(self, url, method="GET", data=None, auth=True, timeout=12):
         headers = {"Accept": "application/vnd.github+json", "User-Agent": "material-cabinet"}
         token = self._token() if auth else ""
         if token:
@@ -108,11 +202,15 @@ class GitHubSyncService:
             headers["Content-Type"] = "application/json"
         request = urllib.request.Request(url, data=body, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with _urlopen_with_retry(request, timeout) as response:
                 raw = response.read()
                 return response.status, json.loads(raw.decode("utf-8")) if raw else {}
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:300]
+            if exc.code == 401:
+                return exc.code, {"message": f"GitHub Token 无效或已过期（401），请在设置中重新配置。{detail}"}
+            if exc.code == 403:
+                return exc.code, {"message": f"GitHub 拒绝访问（403）：Token 权限不足或触发接口限流。{detail}"}
             return exc.code, {"message": detail}
         except (OSError, ValueError) as exc:
             return 0, {"message": str(exc)}
@@ -125,12 +223,15 @@ class GitHubSyncService:
             owner=cfg["owner"], repo=cfg["repo"], branch="main", file=name)
         try:
             request = urllib.request.Request(raw_url, headers={"User-Agent": "material-cabinet"})
-            with urllib.request.urlopen(request, timeout=6) as response:
-                raw = response.read().decode("utf-8", errors="replace")
+            with _urlopen_with_retry(request, 10) as response:
+                raw = response.read().decode("utf-8", errors="replace").lstrip("\ufeff")
             value = raw.strip().splitlines()[0] if raw.strip() else ""
             return {"ok": True, "found": bool(value), "value": value}
         except urllib.error.HTTPError as exc:
-            if exc.code == 404:
+            if exc.code == 404 and not self._token():
+                # 无 Token 时 Raw 404 是权威判定（公开仓库文件不存在）；
+                # 有 Token 时私有仓库的 Raw 未鉴权请求同样返回 404（隐藏
+                # 存在性），无信息量，必须继续走 contents API 用 Token 确认
                 return {"ok": True, "found": False, "value": ""}
         except Exception:  # noqa: BLE001 网络错误 → 走 API 回退
             pass
@@ -147,10 +248,9 @@ class GitHubSyncService:
         return {"ok": True, "found": bool(value), "value": value, "sha": payload.get("sha")}
 
     def check_version(self):
+        # 标记文件读取失败（网络抖动/限流）不阻断检查：降级走 Release API
         marker = self._read_marker(VERSION_MARKER_NAME)
-        if not marker.get("ok"):
-            return {"ok": False, "error": marker.get("error")}
-        tag = marker.get("value") or ""
+        tag = (marker.get("value") or "") if marker.get("ok") else ""
         if tag:
             available = _version_tuple(tag.lstrip("vV")) > _version_tuple(self.app_version)
             if not available:
@@ -176,6 +276,16 @@ class GitHubSyncService:
                                      "release_url": payload.get("html_url")}}
 
     def schedule_update(self):
+        # 互斥锁：前端连点"检查更新"会并发进入，两个线程写同一个 .download
+        # 临时文件会互相破坏下载内容，导致 SHA-256 校验失败或替换损坏
+        if not self._update_lock.acquire(blocking=False):
+            return {"ok": False, "error": "已有更新任务在进行中，请稍候"}
+        try:
+            return self._schedule_update_locked()
+        finally:
+            self._update_lock.release()
+
+    def _schedule_update_locked(self):
         result = self.check_version()
         if not result.get("ok") or not result.get("data", {}).get("available"):
             return result
@@ -216,9 +326,16 @@ class GitHubSyncService:
             cur.execute("""SELECT s.slot_code,i.material_id,i.quantity,i.batch_no,i.inbound_date,i.note,i.create_time,i.update_time,m.material_code,m.supplier_code
                          FROM inventories i JOIN slots s ON s.id=i.slot_id LEFT JOIN materials m ON m.id=i.material_id""")
             inventories = [dict(row) for row in cur.fetchall()]
+            # 历史库存记忆库（component_library）随库存一起同步
+            cur.execute("""SELECT lcsc_code,supplier_part,model,name,specification,package,footprint,brand,category,parameters,datasheet,hit_count,source,create_time,update_time
+                         FROM component_library""")
+            components = [dict(row) for row in cur.fetchall()]
         for item in materials:
             item["parameters"] = _json_value(item.get("parameters"))
-        snapshot = {"schema": 1, "updated_at": datetime.now(timezone.utc).isoformat(), "materials": materials, "inventories": inventories}
+        for item in components:
+            item["parameters"] = _json_value(item.get("parameters"))
+        snapshot = {"schema": 2, "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "materials": materials, "inventories": inventories, "components": components}
         snapshot["inventory_version"] = _snapshot_version(snapshot)
         return snapshot
 
@@ -230,11 +347,16 @@ class GitHubSyncService:
         return str(item.get("material_code") or item.get("supplier_code") or item.get("lcsc_code") or item.get("name") or "").strip().lower()
 
     def merge_snapshot(self, snapshot):
-        if not isinstance(snapshot, dict) or snapshot.get("schema") != 1:
+        if not isinstance(snapshot, dict) or snapshot.get("schema") not in (1, 2):
             return {"ok": False, "error": "库存快照格式不受支持"}
+        schema = int(snapshot.get("schema") or 1)
         materials = snapshot.get("materials")
         inventories = snapshot.get("inventories")
-        if not isinstance(materials, list) or not isinstance(inventories, list) or len(materials) > 100000 or len(inventories) > 100000:
+        components = snapshot.get("components")
+        if components is None:
+            components = []  # schema 1 旧快照无记忆库字段，视为空集合
+        if not isinstance(materials, list) or not isinstance(inventories, list) or not isinstance(components, list) \
+                or len(materials) > 100000 or len(inventories) > 100000 or len(components) > 100000:
             return {"ok": False, "error": "库存快照数据无效"}
         material_ids = {}
         changed = 0
@@ -246,9 +368,7 @@ class GitHubSyncService:
                 key = self._material_key(item)
                 if not key or not item.get("name"):
                     continue
-                values = [item.get(f) for f in fields]
-                if isinstance(values[-1], (dict, list)):
-                    values[-1] = json.dumps(values[-1], ensure_ascii=False)
+                values = [_norm_cell(item.get(f)) for f in fields]
                 for index, field in enumerate(fields):
                     if values[index] is None:
                         values[index] = "" if field != "min_stock" else 0
@@ -258,7 +378,9 @@ class GitHubSyncService:
                     values[fields.index("min_stock")] = 0
                 old = existing.get(key)
                 incoming_time = _ts_key(item.get("update_time"))
-                if old and incoming_time and _ts_key(old.get("update_time")) >= incoming_time:
+                # 空 update_time 视为最旧：绝不覆盖本地已有记录（否则畸形快照会
+                # 以 now() 盖掉本地较新的数据，破坏"新者胜"合并原则）
+                if old and (not incoming_time or _ts_key(old.get("update_time")) >= incoming_time):
                     material_ids[key] = old["id"]
                     continue
                 if old:
@@ -279,35 +401,144 @@ class GitHubSyncService:
                 material_id = material_ids.get(self._material_key(item))
                 if not slot_id or not material_id:
                     continue
-                cur.execute("SELECT id,update_time FROM inventories WHERE slot_id=? AND material_id=? AND COALESCE(batch_no,'')=COALESCE(?, '')", (slot_id, material_id, item.get("batch_no")))
+                cur.execute("SELECT id,update_time,batch_no,inbound_date,note FROM inventories WHERE slot_id=? AND material_id=? AND COALESCE(batch_no,'')=COALESCE(?, '')", (slot_id, material_id, item.get("batch_no")))
                 old = cur.fetchone()
                 incoming_time = _ts_key(item.get("update_time"))
                 if old and _ts_key(old[1]) >= incoming_time:
                     continue
+                incoming_batch = _norm_cell(item.get("batch_no"))
+                incoming_date = _norm_cell(item.get("inbound_date"))
+                incoming_note = _norm_cell(item.get("note"))
+                if schema < 2 and old:
+                    # schema 1 旧快照无批次字段：缺省值回填旧值，避免把本地非空
+                    # 批次号/入库日期/备注降级覆盖为 NULL
+                    incoming_batch = old[2] if incoming_batch is None else incoming_batch
+                    incoming_date = old[3] if incoming_date is None else incoming_date
+                    incoming_note = old[4] if incoming_note is None else incoming_note
                 try:
                     quantity = max(0, int(item.get("quantity") or 0))
                 except (TypeError, ValueError):
                     quantity = 0
                 update_time = incoming_time or datetime.now().isoformat()
                 if old:
-                    cur.execute("UPDATE inventories SET quantity=?,batch_no=?,inbound_date=?,note=?,update_time=? WHERE id=?", (quantity, item.get("batch_no"), item.get("inbound_date"), item.get("note"), update_time, old[0]))
+                    cur.execute("UPDATE inventories SET quantity=?,batch_no=?,inbound_date=?,note=?,update_time=? WHERE id=?", (quantity, incoming_batch, incoming_date, incoming_note, update_time, old[0]))
                 else:
-                    cur.execute("INSERT INTO inventories(slot_id,material_id,quantity,batch_no,inbound_date,note,update_time) VALUES(?,?,?,?,?,?,?)", (slot_id, material_id, quantity, item.get("batch_no"), item.get("inbound_date"), item.get("note"), update_time))
+                    cur.execute("INSERT INTO inventories(slot_id,material_id,quantity,batch_no,inbound_date,note,update_time) VALUES(?,?,?,?,?,?,?)", (slot_id, material_id, quantity, incoming_batch, incoming_date, incoming_note, update_time))
+                changed += 1
+
+            # 历史库存记忆库合并：去重键序与 ComponentLib.record 一致
+            # （lcsc_code → supplier_part → model+package），update_time 新者胜
+            comp_fields = ["lcsc_code", "supplier_part", "model", "name", "specification",
+                           "package", "footprint", "brand", "category", "parameters",
+                           "datasheet", "hit_count", "source"]
+            for item in components:
+                lcsc = str(item.get("lcsc_code") or "").strip()
+                spart = str(item.get("supplier_part") or "").strip()
+                model = str(item.get("model") or "").strip()
+                if not (lcsc or spart or model):
+                    continue
+                values = []
+                for field in comp_fields:
+                    v = item.get(field)
+                    if field == "parameters" and isinstance(v, (dict, list)):
+                        v = json.dumps(v, ensure_ascii=False)
+                    if field == "hit_count":
+                        try:
+                            v = max(0, int(v or 0))
+                        except (TypeError, ValueError):
+                            v = 0
+                    if v is None:
+                        v = "" if field != "hit_count" else 0
+                    values.append(str(v).strip() if isinstance(v, str) else v)
+                values = [_norm_cell(v) for v in values]
+                old = None
+                if lcsc:
+                    cur.execute("SELECT id,update_time FROM component_library WHERE lcsc_code=?", (lcsc,))
+                    old = cur.fetchone()
+                if not old and spart:
+                    cur.execute("SELECT id,update_time FROM component_library WHERE supplier_part=?", (spart,))
+                    old = cur.fetchone()
+                if not old and model:
+                    cur.execute("""SELECT id,update_time FROM component_library
+                                   WHERE model=? AND COALESCE(package,'')=COALESCE(?, '')""",
+                                (model, item.get("package") or ""))
+                    old = cur.fetchone()
+                incoming_time = _ts_key(item.get("update_time"))
+                if old and (not incoming_time or _ts_key(old[1]) >= incoming_time):
+                    continue
+                update_time = incoming_time or datetime.now().isoformat()
+                if old:
+                    cur.execute("UPDATE component_library SET " + ", ".join(f"{f}=?" for f in comp_fields)
+                                + ", update_time=? WHERE id=?", values + [update_time, old[0]])
+                else:
+                    cur.execute("INSERT INTO component_library (" + ",".join(comp_fields)
+                                + ",update_time) VALUES (" + ",".join("?" for _ in comp_fields) + ",?)",
+                                values + [update_time])
                 changed += 1
         return {"ok": True, "data": {"changed": changed}}
 
-    def _download_inventory(self):
+    def _fetch_snapshot_text(self):
+        """下载云端快照文本。
+        无 Token：优先 GitHub Raw 直链（免鉴权、不受 contents API 匿名
+        60 次/小时限流影响），失败回退 contents API。
+        有 Token：优先 contents API——Raw CDN 有约 300 秒缓存，刚上传的快照
+        可能读回旧值，导致"按旧云端合并后上传"覆盖其他设备的新数据；
+        contents API 无此缓存，是参与上传设备的强一致通道。
+        任一通道返回 404 都代表"云端无快照"（权威判定）；单通道网络失败时
+        回退另一通道。返回 (status, text)：200=成功，404=云端无快照，0=失败。"""
         cfg = self._settings()
-        status, payload = self._request(self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{SNAPSHOT_NAME}"), auth=True)
+        raw_url = "https://raw.githubusercontent.com/{owner}/{repo}/main/{file}".format(
+            owner=cfg["owner"], repo=cfg["repo"], file=SNAPSHOT_NAME)
+        api_url = self._api_url(f"repos/{cfg['owner']}/{cfg['repo']}/contents/{SNAPSHOT_NAME}")
+
+        def via_raw():
+            try:
+                request = urllib.request.Request(raw_url, headers={"User-Agent": "material-cabinet"})
+                with _urlopen_with_retry(request, 15) as response:
+                    # lstrip("\ufeff")：GitHub 偶发以 UTF-8 BOM 返回文本，BOM 不属于
+                    # str.strip() 默认空白集，残留会让 json.loads 与版本比对失败
+                    return 200, response.read().decode("utf-8", errors="replace").lstrip("\ufeff")
+            except urllib.error.HTTPError as exc:
+                return (404, "") if exc.code == 404 else (0, f"Raw 通道错误 {exc.code}")
+            except Exception as exc:  # noqa: BLE001 网络异常 → 交由调用方回退
+                return 0, str(exc)
+
+        def via_api():
+            status, payload = self._request(api_url, auth=True)
+            if status == 404:
+                return 404, ""
+            if status != 200:
+                return 0, str(payload.get("message", status))
+            try:
+                raw = base64.b64decode(str(payload.get("content") or "").replace("\n", ""))
+                return 200, raw.decode("utf-8")
+            except (ValueError, UnicodeError) as exc:
+                return 0, str(exc)
+
+        if self._token():
+            primary, fallback = via_api, via_raw
+        else:
+            primary, fallback = via_raw, via_api
+        result = primary()
+        if result[0] != 0:
+            return result
+        # 回退通道返回 200 或 404 都以它为准：404 是"云端无快照"的权威判定，
+        # 优于主通道的网络错误（弱网下 api.github.com 不通而 raw 可达是现实场景）
+        retry = fallback()
+        return retry if retry[0] in (200, 404) else result
+
+    def _download_inventory(self):
+        status, text = self._fetch_snapshot_text()
         if status == 404:
             return {"ok": True, "data": {"found": False, "message": "云端尚无库存快照"}}
         if status != 200:
-            return {"ok": False, "error": f"下载库存失败：{payload.get('message', status)}"}
+            return {"ok": False, "error": f"下载库存失败：{text}"}
         try:
-            raw = base64.b64decode(str(payload.get("content") or "").replace("\n", ""))
-            snapshot = json.loads(raw.decode("utf-8"))
-        except (ValueError, UnicodeError) as exc:
+            snapshot = json.loads(text)
+        except ValueError as exc:
             return {"ok": False, "error": f"云端库存快照损坏：{exc}"}
+        if not isinstance(snapshot, dict):
+            return {"ok": False, "error": "云端库存快照损坏：格式无效"}
         empty = not bool(snapshot.get("materials") or snapshot.get("inventories"))
         result = self.merge_snapshot(snapshot)
         if result.get("ok"):
@@ -369,20 +600,22 @@ class GitHubSyncService:
                 return {"ok": True, "data": {"upload": uploaded.get("data", {}), "message": "空库存已上传并覆盖云端"}}
 
             local_snapshot = self._snapshot()
+            # 版本标记只用于省流量的提前退出：读取失败（网络抖动）不应阻断同步，
+            # 后续下载合并路径自身具备完整容错
             marker = self._read_marker(INVENTORY_MARKER_NAME)
-            if not marker.get("ok"):
-                return marker
             local_version = local_snapshot.get("inventory_version", "")
-            remote_version = marker.get("value", "")
+            remote_version = marker.get("value", "") if marker.get("ok") else ""
             if remote_version and remote_version == local_version:
                 return {"ok": True, "data": {"skipped": True, "inventory_version": local_version, "message": "库存已是最新，无需下载"}}
 
+            # 先下载合并云端（新者胜），失败不再短路——本机修改必须保留上传机会，
+            # 否则出现"其他设备修改后永远无法上传"的死锁
             downloaded = self._download_inventory()
-            if not downloaded.get("ok"):
-                return downloaded
-            if downloaded.get("data", {}).get("empty"):
+            download_ok = bool(downloaded.get("ok"))
+            if download_ok and downloaded.get("data", {}).get("empty"):
                 # 云端为空库存快照 = 上游设备已清空业务数据：本地同步清空，
-                # 避免旧数据本地留存并在下次上传时回填复活云端
+                # 避免旧数据本地留存并在下次上传时回填复活云端。
+                # 此路径不回传本地：防止空业务数据快照覆盖云端记忆库。
                 from models.database import purge_demo_data
                 try:
                     purge_demo_data()
@@ -393,8 +626,21 @@ class GitHubSyncService:
                     "emptied": True,
                     "message": "云端为空库存，本地业务数据已同步清空",
                 }}
-            uploaded = self._upload_inventory(message="同步脱敏库存快照")
-            if not uploaded.get("ok"):
+
+            if download_ok:
+                # 合并成功：重新生成本地快照（已含云端合并结果），上传后云端即双方并集
+                local_snapshot = self._snapshot()
+            uploaded = self._upload_inventory(snapshot=local_snapshot, message="同步脱敏库存快照")
+            upload_ok = bool(uploaded.get("ok"))
+
+            if not download_ok and not upload_ok:
+                return {"ok": False, "error": "库存同步失败：下载（%s）；上传（%s）" % (downloaded.get("error"), uploaded.get("error"))}
+            if not download_ok:
+                return {"ok": True, "data": {
+                    "upload": uploaded.get("data", {}), "download_failed": True,
+                    "message": "本机库存已上传云端；云端下载失败（%s），可稍后再次检查库存" % downloaded.get("error"),
+                }, "warning": downloaded.get("error")}
+            if not upload_ok:
                 # 只读场景（未配置 Token/网络失败）：下载已成功应用本地，允许部分成功返回
                 return {"ok": True, "data": {
                     "download": downloaded.get("data", {}),
@@ -418,7 +664,8 @@ def _version_tuple(value):
 
 
 def _snapshot_version(snapshot):
-    payload = {"schema": snapshot.get("schema"), "materials": snapshot.get("materials", []), "inventories": snapshot.get("inventories", [])}
+    payload = {"schema": snapshot.get("schema"), "materials": snapshot.get("materials", []),
+               "inventories": snapshot.get("inventories", []), "components": snapshot.get("components", [])}
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()[:16]
 
@@ -446,7 +693,7 @@ def _download_checksum(url, asset_name):
     headers["Accept"] = "application/octet-stream"
     request = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
+        with _urlopen_with_retry(request, 15) as response:
             text = response.read().decode("utf-8", errors="replace")
     except (OSError, urllib.error.URLError):
         return ""
@@ -477,18 +724,54 @@ def _ts_key(value):
     return t
 
 
-def _download(url, path):
-    headers = _auth_headers()
-    headers["Accept"] = "application/octet-stream"
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=30) as response, open(path, "wb") as target:
-        shutil.copyfileobj(response, target)
+def _validate_pe_file(path):
+    """校验文件为合法 Windows PE 可执行文件（MZ 头 + PE 签名）。
+    防止把限流页/错误页/半截文件当成 EXE 替换——那是更新后报
+    “Failed to load Python DLL 'python312.dll'”的最常见根因。"""
+    with open(path, "rb") as f:
+        header = f.read(64)
+    if len(header) < 64 or header[:2] != b"MZ":
+        raise ValueError("下载文件不是有效的 Windows 程序（缺少 MZ 头），已中止替换")
+    pe_offset = int.from_bytes(header[60:64], "little")
+    if pe_offset <= 0 or pe_offset > 512 * 1024 * 1024:
+        raise ValueError("下载文件 PE 结构异常，已中止替换")
+    with open(path, "rb") as f:
+        f.seek(pe_offset)
+        if f.read(4) != b"PE\x00\x00":
+            raise ValueError("下载文件 PE 签名校验失败，已中止替换")
+
+
+def _download(url, path, attempts=2):
+    """带重试与 PE 校验的下载：单次网络抖动/限流不再导致更新静默失败。
+    外层 attempts=2 × 内层代理/直连交替 2 次 = 最多 4 次连接尝试。"""
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            headers = _auth_headers()
+            headers["Accept"] = "application/octet-stream"
+            request = urllib.request.Request(url, headers=headers)
+            with _urlopen_with_retry(request, 60) as response, open(path, "wb") as target:
+                shutil.copyfileobj(response, target)
+            _validate_pe_file(path)
+            return
+        except Exception as exc:  # noqa: BLE001 记录后重试
+            last_error = exc
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except OSError:
+                pass
+            if attempt < attempts:
+                time.sleep(2 * attempt)
+    raise OSError(f"下载失败（已重试 {attempts * 2} 次）：{last_error}")
 
 
 def _schedule_replace(current, downloaded, parent_pid=None):
     """Windows 下运行中的 EXE 无法被覆盖。本函数派生隐藏 PowerShell 替换器：
-    先等待主进程退出，再把旧版改名 .old、新文件就位（保持原路径 = 覆盖即删除旧版），
-    成功后自动重启并清理残留；全程写日志便于排查。
+    先等待主进程退出，再把旧版改名 .old、新文件就位（保持原路径），
+    启动新版并观察 12 秒：新版未能存活（如杀软拦截 PyInstaller 解压导致
+    “Failed to load Python DLL”）则自动回滚旧版并重启；
+    新版存活时保留 .old 备份，由新版启动成功后自行清理。全程写日志。
     """
     script = os.path.join(
         tempfile.gettempdir(),
@@ -500,6 +783,19 @@ def _schedule_replace(current, downloaded, parent_pid=None):
     body = """$ErrorActionPreference='Continue'
 $log=Join-Path $env:TEMP 'material-cabinet-update.log'
 function W($m){ try { Add-Content -LiteralPath $log -Value ((Get-Date -Format 'HH:mm:ss')+' '+$m) } catch {} }
+function Test-Pe($p){
+  try {
+    $fs=[IO.File]::OpenRead($p); $b=New-Object byte[] 2; $null=$fs.Read($b,0,2); $fs.Close()
+    return ($b[0] -eq 77 -and $b[1] -eq 90)
+  } catch { return $false }
+}
+function Find-App($p){
+  $found=$null
+  Get-Process -ErrorAction SilentlyContinue | ForEach-Object {
+    if (-not $found) { try { if ($_.Path -eq $p) { $found=$_ } } catch {} }
+  }
+  return $found
+}
 W 'updater start'
 try {
   $waited=0.0
@@ -517,17 +813,33 @@ try {
       $ok=$true
     } catch { W ('attempt '+$i+' failed: '+$_.Exception.Message); Start-Sleep -Seconds 1 }
   }
-  if ($ok) {
-    W 'replaced, cleaning old + relaunching'
-    Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
-    Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent)
-  } else {
+  if (-not $ok) {
     W 'replace FAILED, restoring old'
     if ((Test-Path -LiteralPath $old) -and -not (Test-Path -LiteralPath $cur)) { Rename-Item -LiteralPath $old -NewName ([IO.Path]::GetFileName($cur)) -Force -ErrorAction SilentlyContinue }
+  } elseif (-not (Test-Pe $cur)) {
+    W 'new EXE header invalid, restoring old'
+    Remove-Item -LiteralPath $cur -Force -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $old) { Rename-Item -LiteralPath $old -NewName ([IO.Path]::GetFileName($cur)) -Force -ErrorAction SilentlyContinue }
+    Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent)
+  } else {
+    W 'replaced, relaunching new version'
+    Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent)
+    Start-Sleep -Seconds 12
+    $alive = Find-App $cur
+    if ($alive) {
+      W ('new version alive (pid '+$alive.Id+')')
+      W '.old backup kept: cleanup handled by new version after successful startup'
+    } else {
+      W 'new version failed to start within 12s, rolling back to old version'
+      Remove-Item -LiteralPath $cur -Force -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 1
+      if (Test-Path -LiteralPath $old) { Rename-Item -LiteralPath $old -NewName ([IO.Path]::GetFileName($cur)) -Force -ErrorAction SilentlyContinue }
+      if (Test-Pe $cur) { Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent); W 'rollback complete, old version relaunched' }
+      else { W 'rollback FAILED: old backup missing' }
+    }
   }
 } catch { W ('updater fatal: '+$_.Exception.Message) }
 Remove-Item -LiteralPath $dl -Force -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
 W 'updater done'
 """
     body = (body.replace("@PID@", str(pid))
@@ -539,6 +851,37 @@ W 'updater done'
     subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden",
                       "-ExecutionPolicy", "Bypass", "-File", script],
                      creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
+def cleanup_stale_update_files(delay_old=60.0):
+    """清理上次更新残留（<exe>.old 旧版备份 / <exe>.download 半成品）。
+    .download 是下载中断产物，更新器每次更新前都会清掉重下，可立即删除；
+    .old 是更新器的回滚备份——替换完成后更新器还会观察 12 秒，新版异常
+    退出就把 .old 改名回滚，本实例必须等存活超过观察窗口（60 秒留富余）
+    再删，且只允许持有实例锁的主实例调用。"""
+    if not getattr(sys, "frozen", False):
+        return
+    current = os.path.abspath(sys.executable)
+    download_path = current + ".download"
+    try:
+        if os.path.exists(download_path):
+            os.remove(download_path)
+    except OSError:
+        pass
+    old_path = current + ".old"
+    if not os.path.exists(old_path):
+        return
+
+    def _remove_old():
+        try:
+            os.remove(old_path)
+        except OSError:
+            pass
+
+    if delay_old and delay_old > 0:
+        threading.Timer(delay_old, _remove_old).start()
+    else:
+        _remove_old()
 
 
 def _json_value(value):
