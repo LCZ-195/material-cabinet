@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 # 应用版本号唯一来源：main.py 窗口标题与 GitHubSyncService 的更新比对
 # 均从这里引用，升级版本只改这一处，避免双处硬编码漂移
-APP_VERSION = "2.16.3"
+APP_VERSION = "2.16.4"
 
 
 class Backend:

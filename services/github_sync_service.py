@@ -873,11 +873,11 @@ W 'updater done'
                      creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
-def cleanup_stale_update_files(delay_old=60.0):
+def cleanup_stale_update_files(delay_old=120.0):
     """清理上次更新残留（<exe>.old 旧版备份 / <exe>.download 半成品）。
     .download 是下载中断产物，更新器每次更新前都会清掉重下，可立即删除；
-    .old 是更新器的回滚备份——替换完成后更新器还会观察 12 秒，新版异常
-    退出就把 .old 改名回滚，本实例必须等存活超过观察窗口（60 秒留富余）
+    .old 是更新器的回滚备份——替换完成后更新器会观察启动稳定性，新版异常
+    退出就把 .old 改名回滚，本实例必须等存活超过观察窗口（120 秒留富余）
     再删，且只允许持有实例锁的主实例调用。"""
     if not getattr(sys, "frozen", False):
         return

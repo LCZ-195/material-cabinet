@@ -66,8 +66,8 @@ class AppSettings:
         return result
 
     @staticmethod
-    def get(key: str):
-        return AppSettings.all().get(key, _DEFAULT_SETTINGS.get(key))
+    def get(key: str, default=None):
+        return AppSettings.all().get(key, _DEFAULT_SETTINGS.get(key, default))
 
     @staticmethod
     def set(key: str, value):
