@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """格位与库存模型（支持单格多物料）"""
 from .database import get_cursor, AppSettings
 from config import CABINET_ROWS, CABINET_COLS, SLOTS_PER_CELL
