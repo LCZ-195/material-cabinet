@@ -169,7 +169,7 @@ python main.py
 
 - 设置页可配置私有仓库 `LCZ-195/material-cabinet`、GitHub Token 和启动检查开关。**v1.15.8 起**：「启动时检查新版本」「启动时自动同步库存」为两个独立开关，关闭后启动不再联网检查/同步，便于离线开发调试；面板内新增 Token 配置状态提示与「检查并安装更新」按钮，手动检查/安装不受开关影响。
 
-- Token 仅保存到当前 Windows 用户的 `%LOCALAPPDATA%\物料收纳柜\github_token.bin`，使用 Windows DPAPI 保护，不写入数据库、源码、EXE 或 GitHub 快照。
+- Token 仅保存到当前 Windows 用户的 `%LOCALAPPDATA%\\物料收纳柜\\github_token.bin`，使用 Windows DPAPI 保护，不写入数据库、源码、EXE 或 GitHub 快照。
 
 - 版本检查优先读取仓库根目录的 `VERSION.txt` 轻量标记，仅在标记发现新版本或标记缺失时查询 Release；版本更新只接受 GitHub Release 中的 EXE，并要求 Release 附带 `SHA256.txt`、`checksums.txt` 或 `checksums.sha256`，清单中必须存在对应 EXE 文件名和 64 位 SHA-256；校验失败会拒绝更新。
 
