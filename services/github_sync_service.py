@@ -24,6 +24,9 @@ SNAPSHOT_NAME = "inventory_sync.json"
 VERSION_MARKER_NAME = "VERSION.txt"
 INVENTORY_MARKER_NAME = "INVENTORY_VERSION.txt"
 USER_DATA_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or BASE_DIR, "物料收纳柜")
+# 单实例健康端口：必须与 main.py 的 INSTANCE_PORT 保持一致。
+# 更新器以“新版是否监听此端口”判定 bootloader 是否真正通过。
+INSTANCE_HEALTH_PORT = 47831
 
 
 def _clone_request(request):
@@ -769,9 +772,11 @@ def _download(url, path, attempts=2):
 def _schedule_replace(current, downloaded, parent_pid=None):
     """Windows 下运行中的 EXE 无法被覆盖。本函数派生隐藏 PowerShell 替换器：
     先等待主进程退出，再把旧版改名 .old、新文件就位（保持原路径），
-    启动新版并观察 12 秒：新版未能存活（如杀软拦截 PyInstaller 解压导致
-    “Failed to load Python DLL”）则自动回滚旧版并重启；
-    新版存活时保留 .old 备份，由新版启动成功后自行清理。全程写日志。
+    启动新版并轮询健康端口：新版只有通过 PyInstaller bootloader（DLL 加载
+    成功）并由主程序绑定单实例锁端口后才算存活；若进程存活但端口始终未
+    监听（如杀软拦截导致 “Failed to load Python DLL” 报错弹窗阻塞），则
+    强杀新进程、自动回滚旧版并重启。新版健康时保留 .old 备份，由新版
+    启动成功后自行清理。全程写日志。
     """
     script = os.path.join(
         tempfile.gettempdir(),
@@ -789,12 +794,14 @@ function Test-Pe($p){
     return ($b[0] -eq 77 -and $b[1] -eq 90)
   } catch { return $false }
 }
-function Find-App($p){
-  $found=$null
-  Get-Process -ErrorAction SilentlyContinue | ForEach-Object {
-    if (-not $found) { try { if ($_.Path -eq $p) { $found=$_ } } catch {} }
-  }
-  return $found
+function Test-Port($port){
+  try {
+    $c=New-Object Net.Sockets.TcpClient
+    $done=$c.ConnectAsync('127.0.0.1',$port).Wait(1500)
+    $ok=($done -and $c.Connected)
+    $c.Close()
+    return $ok
+  } catch { return $false }
 }
 W 'updater start'
 try {
@@ -823,16 +830,20 @@ try {
     Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent)
   } else {
     W 'replaced, relaunching new version'
-    Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent)
-    Start-Sleep -Seconds 12
-    $alive = Find-App $cur
-    if ($alive) {
-      W ('new version alive (pid '+$alive.Id+')')
+    $np = Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent) -PassThru
+    $portOk=$false
+    for ($w=0; $w -lt 12 -and -not $portOk; $w++) {
+      Start-Sleep -Seconds 1
+      if (-not (Get-Process -Id $np.Id -ErrorAction SilentlyContinue)) { break }
+      if (Test-Port @PORT@) { $portOk=$true }
+    }
+    if ($portOk) {
+      W ('new version healthy (port @PORT@ listening, pid '+$np.Id+')')
       W '.old backup kept: cleanup handled by new version after successful startup'
     } else {
-      W 'new version failed to start within 12s, rolling back to old version'
-      Remove-Item -LiteralPath $cur -Force -ErrorAction SilentlyContinue
-      Start-Sleep -Seconds 1
+      W 'new version failed to bind health port within 12s, rolling back to old version'
+      if (-not $np.HasExited) { try { $np | Stop-Process -Force } catch {}; Start-Sleep -Seconds 1 }
+      for ($r=0; $r -lt 5 -and (Test-Path -LiteralPath $cur); $r++) { Remove-Item -LiteralPath $cur -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }
       if (Test-Path -LiteralPath $old) { Rename-Item -LiteralPath $old -NewName ([IO.Path]::GetFileName($cur)) -Force -ErrorAction SilentlyContinue }
       if (Test-Pe $cur) { Start-Process -FilePath $cur -WorkingDirectory (Split-Path $cur -Parent); W 'rollback complete, old version relaunched' }
       else { W 'rollback FAILED: old backup missing' }
@@ -845,11 +856,20 @@ W 'updater done'
     body = (body.replace("@PID@", str(pid))
                 .replace("@CUR@", current_q)
                 .replace("@DL@", downloaded_q)
-                .replace("@OLD@", old_q))
+                .replace("@OLD@", old_q)
+                .replace("@PORT@", str(INSTANCE_HEALTH_PORT)))
     with open(script, "w", encoding="utf-8-sig") as f:
         f.write(body)
+    # PyInstaller onefile bootloader 会向本进程环境注入 _PYI_*（如
+    # _PYI_APPLICATION_HOME_DIR 指向本实例临时解压目录）。替换器与它随后
+    # 启动的新版程序若继承这些变量，新版 bootloader 会误判为 PyInstaller
+    # 子进程而尝试挂接早已删除的旧解压目录，报
+    # "Failed to load Python DLL ...\python3xx.dll"。派生前必须剔除。
+    child_env = {k: v for k, v in os.environ.items()
+                 if not k.startswith("_PYI_")}
     subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden",
                       "-ExecutionPolicy", "Bypass", "-File", script],
+                     env=child_env,
                      creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 

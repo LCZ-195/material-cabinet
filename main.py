@@ -48,6 +48,8 @@ from services.github_sync_service import cleanup_stale_update_files
 # ══════════════════════════════════════════════════════════
 APP_NAME = "物料收纳柜"
 INSTANCE_SOCKET = "127.0.0.1"
+# 单实例锁端口：services.github_sync_service.INSTANCE_HEALTH_PORT 引用同一
+# 值生成更新器脚本，修改时两处必须同步。
 INSTANCE_PORT = 47831
 DESIGN_WIDTH = 1440
 DESIGN_HEIGHT = 900
@@ -600,7 +602,12 @@ BRIDGE_JS = r"""
       st.textContent = '.mc-action-spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:mc-spin .7s linear infinite;margin-left:4px;vertical-align:-1px;flex:none;}@keyframes mc-spin{to{transform:rotate(360deg)}}';
       (document.head || document.documentElement).appendChild(st);
     }
-    buttons.filter(Boolean).forEach(function (button) {
+    /* $$ 返回 NodeList，无 .filter 方法：先统一转为真数组再遍历，
+       兼容 NodeList、Array 与单个元素三种传参 */
+    var busyList = buttons && typeof buttons.length === 'number'
+      ? Array.prototype.slice.call(buttons)
+      : [buttons];
+    busyList.filter(Boolean).forEach(function (button) {
       if (busy) {
         if (!button.dataset.actionHtml) button.dataset.actionHtml = button.innerHTML;
         button.disabled = true;
@@ -620,7 +627,9 @@ BRIDGE_JS = r"""
             button.appendChild(runtimeLabel);
           }
         }
-        if (!button.querySelector('.mc-action-spin')) {
+        /* 按钮自带图标已被转为 loader-circle 旋转（.mc-action-busy [data-lucide]
+           动画），仅当按钮没有任何图标时才追加自绘 spinner，避免双转圈 */
+        if (!icon && !button.querySelector('.mc-action-spin')) {
           var spin = document.createElement('span');
           spin.className = 'mc-action-spin';
           spin.setAttribute('aria-hidden', 'true');
@@ -2571,7 +2580,10 @@ def main():
 
     # 页面加载完成后注入脚本
     def on_loaded():
-        window.evaluate_js(build_inject_script())
+        try:
+            window.evaluate_js(build_inject_script())
+        except Exception:
+            pass
 
     window.events.loaded += on_loaded
 
