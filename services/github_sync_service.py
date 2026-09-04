@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -110,7 +111,7 @@ def _urlopen_with_retry(request, timeout):
                 _direct_healthy_until[0] = 0.0
             last_exc = exc
         if step < len(order) - 1:
-            time.sleep(1)
+            time.sleep(0.3)  # 缩短重试间隔，避免用户感知卡顿
     raise last_exc
 
 
@@ -123,6 +124,45 @@ class GitHubSyncService:
         self.app_version = app_version
         self._sync_lock = threading.Lock()
         self._update_lock = threading.Lock()
+        # 自动上传标记：库存变更后立即置位，后台线程检测到后异步上传
+        self._pending_upload = threading.Event()
+        self._auto_upload_stop = threading.Event()
+        self._auto_upload_thread = None
+        self._start_auto_upload_thread()
+
+    def _start_auto_upload_thread(self):
+        """启动后台定时线程：每 3 秒检查一次是否有待上传变更。
+        避免每次库存操作都阻塞主线程发网络请求。"""
+        if self._auto_upload_thread and self._auto_upload_thread.is_alive():
+            return
+
+        def _loop():
+            while not self._auto_upload_stop.is_set():
+                if self._pending_upload.is_set():
+                    try:
+                        self.push_inventory_change()
+                    except Exception:  # noqa: BLE001 后台线程吞掉
+                        pass
+                    self._pending_upload.clear()
+                # 每秒轮询，等待间隔短到用户无感知但足够响应
+                self._auto_upload_stop.wait(1.0)
+
+        self._auto_upload_thread = threading.Thread(target=_loop, daemon=True, name="inventory-auto-upload")
+        self._auto_upload_thread.start()
+
+    def mark_inventory_changed(self):
+        """标记库存发生变更：由 InventoryService / Backend 在写操作完成后调用"""
+        self._pending_upload.set()
+
+    def push_inventory_change(self):
+        """直接上传当前快照到云端（跳过 marker 读取，因为本地即最新）。
+        这是同步库存的快速路径：本地发生变更时调用，跳过 marker 对比的额外网络请求。"""
+        if not self._token():
+            # 无 Token：无法上传，静默放弃（用户可以手动点"检查库存"完整同步）
+            return {"ok": False, "error": "未配置 GitHub Token，无法自动上传"}
+        with self._sync_lock:
+            snapshot = self._snapshot()
+            return self._upload_inventory(snapshot=snapshot, message="库存变更自动同步")
 
     @staticmethod
     def _settings():
@@ -194,7 +234,7 @@ class GitHubSyncService:
         encoded = "/".join(urllib.parse.quote(p, safe="") for p in path.strip("/").split("/"))
         return "https://api.github.com/" + encoded
 
-    def _request(self, url, method="GET", data=None, auth=True, timeout=12):
+    def _request(self, url, method="GET", data=None, auth=True, timeout=5):
         headers = {"Accept": "application/vnd.github+json", "User-Agent": "material-cabinet"}
         token = self._token() if auth else ""
         if token:
@@ -226,7 +266,7 @@ class GitHubSyncService:
             owner=cfg["owner"], repo=cfg["repo"], branch="main", file=name)
         try:
             request = urllib.request.Request(raw_url, headers={"User-Agent": "material-cabinet"})
-            with _urlopen_with_retry(request, 10) as response:
+            with _urlopen_with_retry(request, 4) as response:
                 raw = response.read().decode("utf-8", errors="replace").lstrip("\ufeff")
             value = raw.strip().splitlines()[0] if raw.strip() else ""
             return {"ok": True, "found": bool(value), "value": value}
@@ -582,9 +622,14 @@ class GitHubSyncService:
                 payload["sha"] = current["sha"]
             result_status, result = self._request(url, method="PUT", data=payload, auth=True)
             if result_status in (200, 201):
-                marker = self._upload_file(INVENTORY_MARKER_NAME, snapshot["inventory_version"], "更新库存版本标记")
-                if not marker.get("ok"):
-                    return marker
+                # marker 上传改为后台 fire-and-forget，避免阻塞返回
+                # 主文件 PUT 成功后立即返回，marker 并行完成
+                threading.Thread(
+                    target=self._upload_file,
+                    args=(INVENTORY_MARKER_NAME, snapshot["inventory_version"], "更新库存版本标记"),
+                    daemon=True,
+                    name="github-marker-upload",
+                ).start()
                 return {"ok": True, "data": {"uploaded": True, "updated_at": snapshot["updated_at"], "inventory_version": snapshot["inventory_version"]}}
             if result_status != 409:
                 return {"ok": False, "error": f"上传库存失败：{result.get('message', result_status)}"}
