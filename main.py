@@ -263,6 +263,12 @@ class Bridge:
     def suggest_location(self, specification="", package="", category=""):
         return self._b.suggest_location(specification, package, category)
 
+    def move_inventory(self, inv_id, new_slot_code):
+        return self._b.move_inventory(inv_id, new_slot_code)
+
+    def list_all_slots(self):
+        return self._b.list_all_slots()
+
     # ── BOM ────────────────────────────────────────────────
     def list_bom_records(self):
         return self._b.list_bom_records()
@@ -950,8 +956,86 @@ BRIDGE_JS = r"""
       + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'
       + ['material_code|物料编码|必填','name|物料名称|必填','supplier_part|供应商编号|','lcsc_code|立创编号|','specification|规格型号|','package|封装|','category|分类|','min_stock|最低库存|'].map(function (item) { var p = item.split('|'); return '<label class="grid gap-1 text-sm"><span class="text-muted-foreground">' + p[1] + (p[2] ? ' <em class="text-[var(--mc-state-error)]">' + p[2] + '</em>' : '') + '</span><input name="' + p[0] + '" class="field" ' + (p[0] === 'min_stock' ? 'type="number" min="0" value="10"' : '') + '></label>'; }).join('')
       + '<label class="grid gap-1 text-sm sm:col-span-2"><span class="text-muted-foreground">参数（JSON或文本）</span><textarea name="parameters" class="field min-h-24 py-2"></textarea></label>'
-      + '</div><p id="material-dialog-hint" class="mt-4 text-sm text-muted-foreground"></p>'
-      + '<div class="mt-6 flex justify-end gap-2"><button type="button" id="material-dialog-cancel" class="btn">取消</button><button type="submit" class="btn btn-primary"><i data-lucide="save" class="w-4 h-4"></i>保存并推荐仓位</button></div></form></div>';
+      + '</div>'
+      + '<div class="mt-4" id="material-inventory-section" hidden>'
+      + '<div class="flex items-center justify-between mb-2"><h3 class="text-sm font-semibold">存放仓位</h3><button type="button" id="material-refresh-inventories" class="text-xs text-muted-foreground hover:text-foreground">刷新</button></div>'
+      + '<div id="material-inventory-list" class="space-y-2"></div>'
+      + '</div>'
+      + '<p id="material-dialog-hint" class="mt-4 text-sm text-muted-foreground"></p>'
+      + '<div class="mt-6 flex justify-end gap-2"><button type="button" id="material-dialog-cancel" class="btn">取消</button><button type="submit" class="btn btn-primary"><i data-lucide="save" class="w-4 h-4"></i>保存</button></div></form></div>';
+  }
+
+  function renderMaterialInventorySection(material) {
+    var section = $('#material-inventory-section');
+    var list = $('#material-inventory-list');
+    if (!section || !list) return;
+    var invs = (material && material.inventories) || [];
+    if (!invs.length) {
+      section.hidden = true;
+      return;
+    }
+    section.hidden = false;
+    var html = '';
+    invs.forEach(function (inv) {
+      var qty = inv.quantity !== undefined ? inv.quantity : inv.qty;
+      html += '<div class="flex items-center gap-2 text-sm border border-border rounded-md px-3 py-2">'
+        + '<span class="font-mono font-medium">' + escapeHtml(inv.slot_code || '-') + '</span>'
+        + '<span class="text-muted-foreground">× ' + escapeHtml(String(qty || 0)) + '</span>'
+        + '<span class="flex-1"></span>'
+        + '<button type="button" class="btn btn-move-slot" data-inv-id="' + inv.id + '" data-slot-code="' + escapeHtml(inv.slot_code || '') + '"><i data-lucide="move" class="w-3.5 h-3.5"></i>调仓</button>'
+        + '</div>';
+    });
+    list.innerHTML = html;
+    refreshIcons();
+    list.querySelectorAll('[data-inv-id]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        promptMoveSlot(Number(btn.getAttribute('data-inv-id')), btn.getAttribute('data-slot-code'));
+      });
+    });
+  }
+
+  function promptMoveSlot(invId, currentSlotCode) {
+    api.list_all_slots().then(function (res) {
+      if (!res.ok) { showToast('无法加载格位列表', 'error'); return; }
+      var slots = res.data.slots || [];
+      var options = slots.map(function (s) {
+        return '<option value="' + escapeHtml(s.slot_code) + '"' + (s.slot_code === currentSlotCode ? ' selected' : '') + '>' + escapeHtml(s.slot_code) + '</option>';
+      }).join('');
+      var dlg = document.createElement('div');
+      dlg.className = 'fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4';
+      dlg.innerHTML = '<div class="w-full max-w-sm rounded-lg border border-border bg-card p-5 shadow-lg">'
+        + '<h3 class="text-base font-semibold mb-3">调整存放仓位</h3>'
+        + '<p class="text-xs text-muted-foreground mb-3">当前仓位：<span class="font-mono">' + escapeHtml(currentSlotCode || '-') + '</span></p>'
+        + '<label class="grid gap-1 text-sm mb-4"><span class="text-muted-foreground">目标格位</span><select id="move-slot-select" class="field"></select></label>'
+        + '<div class="flex justify-end gap-2"><button id="move-slot-cancel" type="button" class="btn">取消</button><button id="move-slot-confirm" type="button" class="btn btn-primary">确认移动</button></div></div>';
+      dlg.querySelector('#move-slot-select').innerHTML = options;
+      document.body.appendChild(dlg);
+      refreshIcons();
+      dlg.querySelector('#move-slot-cancel').addEventListener('click', function () { dlg.remove(); });
+      dlg.addEventListener('click', function (ev) { if (ev.target === dlg) dlg.remove(); });
+      dlg.querySelector('#move-slot-confirm').addEventListener('click', function () {
+        var target = dlg.querySelector('#move-slot-select').value;
+        if (!target) { showToast('请选择目标格位', 'error'); return; }
+        showToast('正在移动...', 'info');
+        api.move_inventory(invId, target).then(function (r) {
+          dlg.remove();
+          if (r.ok) {
+            showToast('仓位调整成功', 'success');
+            if (window._currentEditingMaterialId) {
+              api.get_material(window._currentEditingMaterialId).then(function (d) {
+                if (d.ok && d.data && d.data.material) renderMaterialInventorySection(d.data.material);
+              });
+            }
+            var searchEl = $('#filter-material-search');
+            loadMaterials(searchEl ? searchEl.value.trim() : '', '');
+          } else {
+            showToast(r.error || '移动失败', 'error');
+          }
+        }).catch(function () { showToast('移动请求异常', 'error'); dlg.remove(); });
+      });
+    });
   }
   function openMaterialDialog(material) {
     if (!$('#material-dialog')) { document.body.insertAdjacentHTML('beforeend', materialDialogMarkup()); refreshIcons(); }
@@ -970,7 +1054,13 @@ BRIDGE_JS = r"""
     if (title) title.textContent = material ? '编辑物料' : '新增物料';
     dialog.classList.remove('hidden'); dialog.classList.add('flex');
     form.dataset.materialId = material && material.id ? material.id : '';
+    window._currentEditingMaterialId = material && material.id ? Number(material.id) : null;
     var first = form.elements.material_code; if (first) first.focus();
+    if (material && material.id) {
+      renderMaterialInventorySection(material);
+    } else {
+      renderMaterialInventorySection(null);
+    }
   }
   function closeMaterialDialog() { var dialog = $('#material-dialog'); if (dialog) { dialog.classList.add('hidden'); dialog.classList.remove('flex'); } }
   function bindMaterialDialog() {
@@ -1136,8 +1226,8 @@ BRIDGE_JS = r"""
           + '<td class="px-4 py-3 text-sm font-mono whitespace-nowrap">' + escapeHtml(m.material_code) + '</td>'
           + '<td class="px-4 py-3 text-sm font-medium">' + escapeHtml(m.material_name || '')
           + (m.specification ? '<div class="text-xs text-muted-foreground font-normal">' + escapeHtml(m.specification) + '</div>' : '') + '</td>'
-          + '<td class="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">' + escapeHtml(m.category || '') + '</td>'
-          + '<td class="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">' + escapeHtml(m.package || '') + '</td>'
+          + '<td class="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">' + (m.category ? escapeHtml(m.category) : '-') + '</td>'
+          + '<td class="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">' + (m.package ? escapeHtml(m.package) : '-') + '</td>'
           + '<td class="px-4 py-3 text-sm font-semibold text-right whitespace-nowrap">' + (m.total_qty || 0) + '</td>'
           + '<td class="px-4 py-3 text-sm text-muted-foreground" title="' + escapeHtml(slots) + '">' + (slots
             ? '<span class="inline-block max-w-[150px] overflow-hidden text-ellipsis align-bottom whitespace-nowrap">' + escapeHtml(slots) + '</span>'
