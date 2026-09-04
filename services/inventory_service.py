@@ -202,7 +202,7 @@ class ExportService:
             for i in invs:
                 row.append(f"{i.get('material_name','')} "
                            f"{i.get('specification','')} | {i.get('quantity',0)}"
-                           f"{i.get('unit',个')} (品牌: {i.get('brand','')})")
+                           f"{i.get('unit','个')} (品牌: {i.get('brand','')})")
             ws2.append(row)
         try:
             wb.save(file_path)
