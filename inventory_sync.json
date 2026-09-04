@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-09-04T11:26:43.332251+00:00",
+  "updated_at": "2026-09-04T11:28:23.267781+00:00",
   "materials": [
     {
       "material_code": "C22775",
@@ -1803,6 +1803,23 @@
       "parameters": "",
       "create_time": "2026-09-03 16:39:51",
       "update_time": "2026-09-02 08:21:55"
+    },
+    {
+      "material_code": "1",
+      "name": "郑博文",
+      "category": "",
+      "specification": "魔丸",
+      "package": "",
+      "supplier_code": null,
+      "lcsc_code": "",
+      "brand": null,
+      "unit": "个",
+      "min_stock": 10,
+      "description": null,
+      "datasheet_url": null,
+      "parameters": {},
+      "create_time": "2026-09-04 11:27:25",
+      "update_time": "2026-09-04 11:27:53"
     }
   ],
   "inventories": [
@@ -5249,5 +5266,5 @@
       "update_time": "2026-09-02 08:22:10"
     }
   ],
-  "inventory_version": "a2e8f76b2b35f6f6"
+  "inventory_version": "ca9e254589812be4"
 }
