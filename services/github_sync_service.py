@@ -139,12 +139,13 @@ class GitHubSyncService:
         def _loop():
             while not self._auto_upload_stop.is_set():
                 if self._pending_upload.is_set():
-                    try:
-                        self.push_inventory_change()
-                    except Exception:  # noqa: BLE001 后台线程吞掉
-                        pass
                     self._pending_upload.clear()
-                # 每秒轮询，等待间隔短到用户无感知但足够响应
+                    try:
+                        result = self.push_inventory_change()
+                        if not result.get("ok") and self._token():
+                            self._pending_upload.set()
+                    except Exception:  # noqa: BLE001 后台线程吞掉
+                        self._pending_upload.set()
                 self._auto_upload_stop.wait(1.0)
 
         self._auto_upload_thread = threading.Thread(target=_loop, daemon=True, name="inventory-auto-upload")
@@ -157,8 +158,9 @@ class GitHubSyncService:
     def push_inventory_change(self):
         """直接上传当前快照到云端（跳过 marker 读取，因为本地即最新）。
         这是同步库存的快速路径：本地发生变更时调用，跳过 marker 对比的额外网络请求。"""
+        if not _as_bool(AppSettings.get("github_auto_inventory", True)):
+            return {"ok": True, "skipped": True, "reason": "auto-inventory-disabled"}
         if not self._token():
-            # 无 Token：无法上传，静默放弃（用户可以手动点"检查库存"完整同步）
             return {"ok": False, "error": "未配置 GitHub Token，无法自动上传"}
         with self._sync_lock:
             snapshot = self._snapshot()
