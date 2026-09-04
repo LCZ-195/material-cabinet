@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """格位与库存模型（支持单格多物料）"""
 from .database import get_cursor, AppSettings
 from config import CABINET_ROWS, CABINET_COLS, SLOTS_PER_CELL
@@ -272,6 +272,44 @@ class Inventory:
                 cur.execute("DELETE FROM inventories WHERE id=? AND slot_id=?", (inv_id, slot_id))
             else:
                 cur.execute("DELETE FROM inventories WHERE slot_id=?", (slot_id,))
+
+    @staticmethod
+    def move_to_slot(inv_id, target_slot_id, note=None):
+        """将库存条目移到目标格位：若目标已有同物料则合并数量，否则直接更改 slot_id。
+        返回操作后生效的库存条目 id（合并时可能变成目标条目 id）。"""
+        with get_cursor() as cur:
+            cur.execute("SELECT * FROM inventories WHERE id=?", (inv_id,))
+            src = cur.fetchone()
+            if not src:
+                return None
+            src_qty = int(src["quantity"])
+            src_mid = src["material_id"]
+
+            # 检查目标格位是否已有同物料条目
+            cur.execute(
+                "SELECT id, quantity FROM inventories "
+                "WHERE slot_id=? AND material_id=? AND quantity > 0",
+                (target_slot_id, src_mid))
+            dst = cur.fetchone()
+            if dst:
+                # 合并到目标条目
+                cur.execute(
+                    "UPDATE inventories SET quantity = quantity + ?, "
+                    "update_time = CURRENT_TIMESTAMP WHERE id=?",
+                    (src_qty, dst["id"]))
+                cur.execute("DELETE FROM inventories WHERE id=?", (inv_id,))
+                return int(dst["id"])
+            else:
+                # 直接更改 slot_id
+                update_sql = "UPDATE inventories SET slot_id=?, update_time=CURRENT_TIMESTAMP"
+                params = [target_slot_id]
+                if note:
+                    update_sql += ", note=?"
+                    params.append(note)
+                update_sql += " WHERE id=?"
+                params.append(inv_id)
+                cur.execute(update_sql, params)
+                return inv_id
 
     # ---------- 搜索：领料BOM用（分级匹配，逐级放宽） ----------
     @staticmethod
