@@ -45,7 +45,7 @@ from models.database import init_database, purge_demo_data, factory_reset, AppSe
 from models.material_model import Material
 from models.inventory_model import Slot, Inventory
 from models.bom_model import BomRecord, BomItem, OperationLog
-from services.inventory_service import InventoryService, ExportService
+from services.inventory_service import InventoryService, ExportService, _mark_inventory_changed
 from services.bom_service import BomImporter, BomMatcher
 from services.lcsc_service import LCSCApi, LocalParameterMatcher
 from services.deepseek_service import DeepSeekService
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 # 应用版本号唯一来源：main.py 窗口标题与 GitHubSyncService 的更新比对
 # 均从这里引用，升级版本只改这一处，避免双处硬编码漂移
-APP_VERSION = "2.16.4"
+APP_VERSION = "2.16.5"
 
 
 class Backend:
@@ -347,15 +347,23 @@ class Backend:
     # 物料
     # ================================================================
     def _enrich_material(self, m):
-        """给物料补上库存总量与所在格位"""
+        """给物料补上库存总量、所在格位和完整库存条目列表"""
         if not m:
             return m
         try:
             invs = Inventory.get_by_material(m["id"]) or []
         except Exception:  # noqa: BLE001
             invs = []
+        # 补充 slot_code 到每条库存，方便前端调仓选择
+        for inv in invs:
+            try:
+                slot = Slot.get(inv.get("slot_id"))
+                inv["slot_code"] = slot.get("slot_code", "") if slot else ""
+            except Exception:  # noqa: BLE001
+                inv["slot_code"] = ""
+        m["inventories"] = invs
         m["total_qty"] = sum(int(i.get("quantity") or 0) for i in invs)
-        m["locations"] = " / ".join(i.get("slot_code", "") for i in invs)
+        m["locations"] = " / ".join(i.get("slot_code", "") for i in invs if i.get("quantity", 0) > 0)
         m["slot_codes"] = m["locations"]
         m["material_name"] = m.get("name", "")
         m["status"] = self._slot_status(m["total_qty"], m.get("min_stock"),
@@ -561,6 +569,35 @@ class Backend:
                 return self._fail(f"格位不存在: {slot_code}")
             InventoryService.remove_single_inventory(slot["id"], int(inv_id))
             return self._ok(slot_id=slot["id"])
+
+    def move_inventory(self, inv_id, new_slot_code):
+        """将库存条目从当前格位移到目标格位（同物料目标格位自动累加）。
+        用于物料编辑弹窗的"存放位置调整"。"""
+        with self._lock:
+            from models.inventory_model import Inventory as Inv
+            inv = Inv.get(int(inv_id))
+            if not inv:
+                return self._fail("库存记录不存在")
+            new_slot = Slot.get_by_code(str(new_slot_code).strip())
+            if not new_slot:
+                return self._fail(f"目标格位不存在: {new_slot_code}")
+            if new_slot["id"] == inv["slot_id"]:
+                return self._ok(msg="目标格位与当前相同，无需移动")
+            new_inv_id = Inv.move_to_slot(
+                inv["id"], new_slot["id"],
+                note=f"物料编辑调仓: {inv.get('slot_id')}→{new_slot['id']}")
+            _mark_inventory_changed()
+            return self._ok(inv_id=new_inv_id, slot_code=new_slot["slot_code"])
+
+    def list_all_slots(self):
+        """返回所有格位（用于物料编辑弹窗的下拉选择）。"""
+        with self._lock:
+            slots = Slot.all() or []
+            return self._ok(slots=[
+                {"id": s["id"], "slot_code": s["slot_code"],
+                 "row": s["row"], "col": s["col"], "position": s["position"]}
+                for s in slots
+            ])
 
     def suggest_location(self, specification="", package="", category=""):
         """补货推荐存放位置"""
