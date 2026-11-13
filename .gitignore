@@ -1,0 +1,32 @@
+# Runtime data
+inventory.db
+logs/
+exports/
+
+# Python cache and local tooling
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+_release_stage/
+*.exe
+
+# Local temporary files
+_trash_*/
+_kb_stage*/
+__mcp_calls/
+__remote_compare/
+__batch*.json
+__remote_sha_map.json
+
+# Local credentials and upload helpers
+__gh_token.txt
+*_token.bin
+*_upload*.py
+*_push*.py
+*_release*.py
